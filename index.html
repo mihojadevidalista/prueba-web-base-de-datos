@@ -183,121 +183,142 @@
     </div>
   </div>
 
- <script>
-  // ID público de tu hoja de Google Sheets
-  const SHEET_ID = '1fEvEVxPw_6DO8dyV9KKGvPcOAjCvrbTO1Z0DPlWVgcg';
-  const JSON_URL = `https://opensheet.elk.sh/${SHEET_ID}/Hoja%201`;
+  <script>
+    // URL de tu Google Sheets publicado en formato CSV
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScJgTawvb8Xt4ihxUbMXBJCr6FO5XSPwDq92qggbXq-yr3wySu434_STias-giNTd3YFt8eN8fcN6d/pub?gid=0&single=true&output=csv';
 
-  let projectsData = [];
+    let projectsData = [];
 
-  // Elementos DOM
-  const grid = document.getElementById('resourceGrid');
-  const searchInput = document.getElementById('searchInput');
-  const selectPeriodo = document.getElementById('filterPeriodo');
-  const selectAsignatura = document.getElementById('filterAsignatura');
-  const selectRegional = document.getElementById('filterRegional');
+    // Elementos DOM
+    const grid = document.getElementById('resourceGrid');
+    const searchInput = document.getElementById('searchInput');
+    const selectPeriodo = document.getElementById('filterPeriodo');
+    const selectAsignatura = document.getElementById('filterAsignatura');
+    const selectRegional = document.getElementById('filterRegional');
 
-  // Cargar datos en formato JSON directo
-  async function fetchSheetData() {
-    try {
-      const response = await fetch(JSON_URL);
-      if (!response.ok) throw new Error('Error en la respuesta del servidor');
-      
-      const rawData = await response.json();
-      
-      // Normalizar nombres de llaves (minúsculas y sin espacios)
-      projectsData = rawData.map(item => ({
-        id: item.ID || item.id || '',
-        proyecto: item.Proyecto || item.proyecto || '',
-        periodo: item.Periodo || item.periodo || '',
-        asignatura: item.Asignatura || item.asignatura || '',
-        regional: item.Regional || item.regional || '',
-        temas: item.Temas || item.temas || '',
-        url: item.URL || item.url || '#'
-      }));
-
-      populateFilterOptions();
-      renderCards(projectsData);
-      setupEventListeners();
-    } catch (error) {
-      console.error('Error al cargar la base de datos:', error);
-      grid.innerHTML = '<div class="no-results">Ocurrió un error al cargar la base de datos. Si estás abriendo el archivo localmente (file://), intenta subirlo a un servidor web o probarlo con Live Server.</div>';
-    }
-  }
-
-  // Llenar selects de filtros con datos únicos
-  function populateFilterOptions() {
-    const periodos = [...new Set(projectsData.map(item => item.periodo).filter(Boolean))];
-    const asignaturas = [...new Set(projectsData.map(item => item.asignatura).filter(Boolean))];
-    const regionales = [...new Set(projectsData.map(item => item.regional).filter(Boolean))];
-
-    periodos.forEach(p => selectPeriodo.add(new Option(p, p)));
-    asignaturas.forEach(a => selectAsignatura.add(new Option(a, a)));
-    regionales.forEach(r => selectRegional.add(new Option(r, r)));
-  }
-
-  // Configurar listeners
-  function setupEventListeners() {
-    searchInput.addEventListener('input', filterData);
-    selectPeriodo.addEventListener('change', filterData);
-    selectAsignatura.addEventListener('change', filterData);
-    selectRegional.addEventListener('change', filterData);
-  }
-
-  // Filtrar la grilla dinámicamente
-  function filterData() {
-    const query = searchInput.value.toLowerCase().trim();
-    const selectedPeriodo = selectPeriodo.value;
-    const selectedAsignatura = selectAsignatura.value;
-    const selectedRegional = selectRegional.value;
-
-    const filtered = projectsData.filter(item => {
-      const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
-                            (item.temas && item.temas.toLowerCase().includes(query));
-
-      const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
-      const matchesAsignatura = !selectedAsignatura || item.asignatura === selectedAsignatura;
-      const matchesRegional = !selectedRegional || item.regional === selectedRegional;
-
-      return matchesSearch && matchesPeriodo && matchesAsignatura && matchesRegional;
-    });
-
-    renderCards(filtered);
-  }
-
-  // Renderizar tarjetas
-  function renderCards(data) {
-    grid.innerHTML = '';
-
-    if (data.length === 0) {
-      grid.innerHTML = '<div class="no-results">No se encontraron resultados que coincidan con los filtros aplicados.</div>';
-      return;
+    // Cargar datos desde Google Sheets
+    async function fetchSheetData() {
+      try {
+        const response = await fetch(CSV_URL);
+        const csvText = await response.text();
+        projectsData = parseCSV(csvText);
+        
+        populateFilterOptions();
+        renderCards(projectsData);
+        setupEventListeners();
+      } catch (error) {
+        console.error('Error al cargar la base de datos:', error);
+        grid.innerHTML = '<div class="no-results">Ocurrió un error al cargar la base de datos. Verifica la publicación en la web de Google Sheets.</div>';
+      }
     }
 
-    data.forEach(item => {
-      const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()) : [];
-      const tagsHtml = temasArray.map(t => `<span class="badge">${t}</span>`).join('');
+    // Parser manual para convertir CSV a objetos JSON
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return [];
 
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div>
-          <h3>${item.proyecto || 'Sin Nombre'}</h3>
-          <div class="meta-info">
-            <strong>Periodo:</strong> ${item.periodo || 'N/A'}<br>
-            <strong>Asignatura:</strong> ${item.asignatura || 'N/A'}<br>
-            <strong>Regional:</strong> ${item.regional || 'N/A'}
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"(.*)"$/, '$1'));
+
+      return lines.slice(1).map(line => {
+        // Regex para parsear valores respetando comas dentro de comillas
+        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          let val = matches[index] ? matches[index].trim() : '';
+          if (val.startsWith('"') && val.endsWith('"')) {
+            val = val.slice(1, -1);
+          }
+
+          const keyMap = {
+            'ID': 'id',
+            'Proyecto': 'proyecto',
+            'Periodo': 'periodo',
+            'Asignatura': 'asignatura',
+            'Regional': 'regional',
+            'Temas': 'temas',
+            'URL': 'url'
+          };
+
+          obj[keyMap[header] || header.toLowerCase()] = val;
+        });
+        return obj;
+      });
+    }
+
+    // Llenar selects de filtros con datos únicos
+    function populateFilterOptions() {
+      const periodos = [...new Set(projectsData.map(item => item.periodo).filter(Boolean))];
+      const asignaturas = [...new Set(projectsData.map(item => item.asignatura).filter(Boolean))];
+      const regionales = [...new Set(projectsData.map(item => item.regional).filter(Boolean))];
+
+      periodos.forEach(p => selectPeriodo.add(new Option(p, p)));
+      asignaturas.forEach(a => selectAsignatura.add(new Option(a, a)));
+      regionales.forEach(r => selectRegional.add(new Option(r, r)));
+    }
+
+    // Configurar listeners de interacción
+    function setupEventListeners() {
+      searchInput.addEventListener('input', filterData);
+      selectPeriodo.addEventListener('change', filterData);
+      selectAsignatura.addEventListener('change', filterData);
+      selectRegional.addEventListener('change', filterData);
+    }
+
+    // Filtrar la grilla dinámicamente
+    function filterData() {
+      const query = searchInput.value.toLowerCase().trim();
+      const selectedPeriodo = selectPeriodo.value;
+      const selectedAsignatura = selectAsignatura.value;
+      const selectedRegional = selectRegional.value;
+
+      const filtered = projectsData.filter(item => {
+        const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
+                              (item.temas && item.temas.toLowerCase().includes(query));
+
+        const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
+        const matchesAsignatura = !selectedAsignatura || item.asignatura === selectedAsignatura;
+        const matchesRegional = !selectedRegional || item.regional === selectedRegional;
+
+        return matchesSearch && matchesPeriodo && matchesAsignatura && matchesRegional;
+      });
+
+      renderCards(filtered);
+    }
+
+    // Renderizar tarjetas
+    function renderCards(data) {
+      grid.innerHTML = '';
+
+      if (data.length === 0) {
+        grid.innerHTML = '<div class="no-results">No se encontraron resultados que coincidan con los filtros aplicados.</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()) : [];
+        const tagsHtml = temasArray.map(t => `<span class="badge">${t}</span>`).join('');
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <h3>${item.proyecto || 'Sin Nombre'}</h3>
+            <div class="meta-info">
+              <strong>Periodo:</strong> ${item.periodo || 'N/A'}<br>
+              <strong>Asignatura:</strong> ${item.asignatura || 'N/A'}<br>
+              <strong>Regional:</strong> ${item.regional || 'N/A'}
+            </div>
+            <div class="tags">${tagsHtml}</div>
           </div>
-          <div class="tags">${tagsHtml}</div>
-        </div>
-        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-link">Ver Recurso / Contenido</a>
-      `;
-      grid.appendChild(card);
-    });
-  }
+          <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="btn-link">Ver Recurso / Contenido</a>
+        `;
+        grid.appendChild(card);
+      });
+    }
 
-  // Iniciar la petición
-  fetchSheetData();
-</script>
+    // Iniciar carga de datos al abrir la página
+    fetchSheetData();
+  </script>
 </body>
 </html>
