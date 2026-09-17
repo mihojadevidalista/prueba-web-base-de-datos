@@ -92,9 +92,16 @@
 
     .card h3 {
       margin-top: 0;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.25rem;
       font-size: 1.2rem;
       color: #0f172a;
+    }
+
+    .author {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #2563eb;
+      margin-bottom: 0.75rem;
     }
 
     .tags {
@@ -149,13 +156,13 @@
   <div class="container">
     <header>
       <h1>Repositorio de Proyectos y Recursos</h1>
-      <p class="subtitle">Busca proyectos por nombre, metadatos o filtra por categorías en tiempo real.</p>
+      <p class="subtitle">Busca proyectos por nombre, autor, metadatos o filtra por categorías en tiempo real.</p>
     </header>
 
     <!-- Panel de búsqueda -->
     <div class="filter-panel">
       <div class="search-group">
-        <input type="text" id="searchInput" placeholder="Buscar por nombre del proyecto, temas o metadatos...">
+        <input type="text" id="searchInput" placeholder="Buscar por proyecto, nombres, apellidos, temas...">
       </div>
 
       <div>
@@ -227,6 +234,8 @@
 
           if (/ID/i.test(cleanHeader)) obj.id = val;
           else if (/Proyecto/i.test(cleanHeader)) obj.proyecto = val;
+          else if (/Nombres/i.test(cleanHeader)) obj.nombres = val;
+          else if (/Apellidos/i.test(cleanHeader)) obj.apellidos = val;
           else if (/Periodo/i.test(cleanHeader)) obj.periodo = val;
           else if (/Asignatura/i.test(cleanHeader)) obj.asignatura = val;
           else if (/Regional/i.test(cleanHeader)) obj.regional = val;
@@ -262,6 +271,8 @@
 
       const filtered = projectsData.filter(item => {
         const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
+                              (item.nombres && item.nombres.toLowerCase().includes(query)) ||
+                              (item.apellidos && item.apellidos.toLowerCase().includes(query)) ||
                               (item.temas && item.temas.toLowerCase().includes(query));
 
         const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
@@ -285,12 +296,17 @@
       data.forEach(item => {
         const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()) : [];
         const tagsHtml = temasArray.map(t => `<span class="badge">${t}</span>`).join('');
+        
+        // Formatear autor si existen nombres o apellidos
+        const nombreCompleto = `${item.nombres || ''} ${item.apellidos || ''}`.trim();
+        const autorHtml = nombreCompleto ? `<div class="author">Autor: ${nombreCompleto}</div>` : '';
 
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div>
             <h3>${item.proyecto || 'Sin Nombre'}</h3>
+            ${autorHtml}
             <div class="meta-info">
               <strong>Periodo:</strong> ${item.periodo || 'N/A'}<br>
               <strong>Asignatura:</strong> ${item.asignatura || 'N/A'}<br>
