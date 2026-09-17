@@ -100,7 +100,7 @@
     .author {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #2563eb;
+      color: var(--primary);
       margin-bottom: 0.75rem;
     }
 
@@ -149,6 +149,43 @@
       color: #64748b;
       padding: 3rem 0;
     }
+
+    /* Paginación */
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .page-btn.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -188,18 +225,25 @@
     <div class="grid" id="resourceGrid">
       <div class="no-results">Cargando base de datos...</div>
     </div>
+
+    <!-- Contenedor de Paginación -->
+    <div class="pagination-container" id="paginationContainer"></div>
   </div>
 
   <script>
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScJgTawvb8Xt4ihxUbMXBJCr6FO5XSPwDq92qggbXq-yr3wySu434_STias-giNTd3YFt8eN8fcN6d/pub?gid=0&single=true&output=csv';
 
     let projectsData = [];
+    let currentFilteredData = [];
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 20;
 
     const grid = document.getElementById('resourceGrid');
     const searchInput = document.getElementById('searchInput');
     const selectPeriodo = document.getElementById('filterPeriodo');
     const selectAsignatura = document.getElementById('filterAsignatura');
     const selectRegional = document.getElementById('filterRegional');
+    const paginationContainer = document.getElementById('paginationContainer');
 
     async function fetchSheetData() {
       try {
@@ -210,15 +254,16 @@
         projectsData = parseCSV(csvText);
 
         populateFilterOptions();
-        renderCards(projectsData);
         setupEventListeners();
+        
+        // Carga inicial: aplicar estado por defecto
+        filterData();
       } catch (error) {
         console.error('Error:', error);
         grid.innerHTML = '<div class="no-results">Ocurrió un error al cargar la base de datos.</div>';
       }
     }
 
-    // Parser CSV avanzado mediante Expresiones Regulares
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       if (lines.length < 2) return [];
@@ -226,7 +271,6 @@
       const dataRows = lines.slice(1);
 
       return dataRows.map(line => {
-        // Regex para capturar valores de celdas respetando comillas
         const values = [];
         const regex = /(?:^|,)(?:"([^"]*)"|([^,]*))/g;
         let match;
@@ -236,7 +280,6 @@
           values.push(val ? val.trim() : '');
         }
 
-        // Mapeo estricto por posición de columna de la A a la I
         return {
           id: values[0] || '',
           proyecto: values[1] || '',
@@ -266,10 +309,10 @@
     }
 
     function setupEventListeners() {
-      searchInput.addEventListener('input', filterData);
-      selectPeriodo.addEventListener('change', filterData);
-      selectAsignatura.addEventListener('change', filterData);
-      selectRegional.addEventListener('change', filterData);
+      searchInput.addEventListener('input', () => { currentPage = 1; filterData(); });
+      selectPeriodo.addEventListener('change', () => { currentPage = 1; filterData(); });
+      selectAsignatura.addEventListener('change', () => { currentPage = 1; filterData(); });
+      selectRegional.addEventListener('change', () => { currentPage = 1; filterData(); });
     }
 
     function filterData() {
@@ -278,27 +321,57 @@
       const selectedAsignatura = selectAsignatura.value;
       const selectedRegional = selectRegional.value;
 
-      const filtered = projectsData.filter(item => {
-        const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
-                              (item.nombres && item.nombres.toLowerCase().includes(query)) ||
-                              (item.apellidos && item.apellidos.toLowerCase().includes(query)) ||
-                              (item.temas && item.temas.toLowerCase().includes(query));
+      const isSearching = query !== '' || selectedPeriodo !== '' || selectedAsignatura !== '' || selectedRegional !== '';
 
-        const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
-        const matchesAsignatura = !selectedAsignatura || item.asignatura === selectedAsignatura;
-        const matchesRegional = !selectedRegional || item.regional === selectedRegional;
+      if (!isSearching) {
+        // MODO INICIAL: Mostrar solo los últimos 10 agregados (sin paginación)
+        currentFilteredData = [...projectsData].reverse().slice(0, 10);
+        renderCards(currentFilteredData);
+        paginationContainer.innerHTML = ''; // Ocultar paginador
+      } else {
+        // MODO BÚSQUEDA: Filtrar todos los coincidentes
+        currentFilteredData = projectsData.filter(item => {
+          const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
+                                (item.nombres && item.nombres.toLowerCase().includes(query)) ||
+                                (item.apellidos && item.apellidos.toLowerCase().includes(query)) ||
+                                (item.temas && item.temas.toLowerCase().includes(query));
 
-        return matchesSearch && matchesPeriodo && matchesAsignatura && matchesRegional;
-      });
+          const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
+          const matchesAsignatura = !selectedAsignatura || item.asignatura === selectedAsignatura;
+          const matchesRegional = !selectedRegional || item.regional === selectedRegional;
 
-      renderCards(filtered);
+          return matchesSearch && matchesPeriodo && matchesAsignatura && matchesRegional;
+        });
+
+        renderPaginatedData();
+      }
+    }
+
+    function renderPaginatedData() {
+      const totalPages = Math.ceil(currentFilteredData.length / ITEMS_PER_PAGE);
+
+      if (totalPages === 0) {
+        grid.innerHTML = '<div class="no-results">No se encontraron resultados que coincidan con la búsqueda.</div>';
+        paginationContainer.innerHTML = '';
+        return;
+      }
+
+      // Asegurar que la página actual no exceda el límite
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageData = currentFilteredData.slice(start, end);
+
+      renderCards(pageData);
+      renderPaginationControls(totalPages);
     }
 
     function renderCards(data) {
       grid.innerHTML = '';
 
       if (data.length === 0) {
-        grid.innerHTML = '<div class="no-results">No se encontraron resultados que coincidan con la búsqueda.</div>';
+        grid.innerHTML = '<div class="no-results">No hay elementos disponibles.</div>';
         return;
       }
 
@@ -326,6 +399,37 @@
         `;
         grid.appendChild(card);
       });
+    }
+
+    function renderPaginationControls(totalPages) {
+      paginationContainer.innerHTML = '';
+
+      if (totalPages <= 1) return;
+
+      // Botón Anterior
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'page-btn';
+      prevBtn.innerText = '« Anterior';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => { currentPage--; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+      paginationContainer.appendChild(prevBtn);
+
+      // Botones Numéricos
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+        btn.innerText = i;
+        btn.onclick = () => { currentPage = i; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        paginationContainer.appendChild(btn);
+      }
+
+      // Botón Siguiente
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'page-btn';
+      nextBtn.innerText = 'Siguiente »';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => { currentPage++; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+      paginationContainer.appendChild(nextBtn);
     }
 
     fetchSheetData();
