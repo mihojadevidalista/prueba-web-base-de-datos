@@ -218,31 +218,36 @@
       }
     }
 
+    // Parser CSV avanzado mediante Expresiones Regulares
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       if (lines.length < 2) return [];
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"(.*)"$/, '$1'));
+      const dataRows = lines.slice(1);
 
-      return lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim().replace(/^"(.*)"$/, '$1'));
-        const obj = {};
+      return dataRows.map(line => {
+        // Regex para capturar valores de celdas respetando comillas
+        const values = [];
+        const regex = /(?:^|,)(?:"([^"]*)"|([^,]*))/g;
+        let match;
 
-        headers.forEach((header, index) => {
-          const cleanHeader = header.trim();
-          const val = values[index] || '';
+        while ((match = regex.exec(line)) !== null) {
+          let val = match[1] !== undefined ? match[1] : match[2];
+          values.push(val ? val.trim() : '');
+        }
 
-          if (/ID/i.test(cleanHeader)) obj.id = val;
-          else if (/Proyecto/i.test(cleanHeader)) obj.proyecto = val;
-          else if (/Nombres/i.test(cleanHeader)) obj.nombres = val;
-          else if (/Apellidos/i.test(cleanHeader)) obj.apellidos = val;
-          else if (/Periodo/i.test(cleanHeader)) obj.periodo = val;
-          else if (/Asignatura/i.test(cleanHeader)) obj.asignatura = val;
-          else if (/Regional/i.test(cleanHeader)) obj.regional = val;
-          else if (/Temas/i.test(cleanHeader)) obj.temas = val;
-          else if (/URL/i.test(cleanHeader)) obj.url = val;
-        });
-        return obj;
+        // Mapeo estricto por posición de columna de la A a la I
+        return {
+          id: values[0] || '',
+          proyecto: values[1] || '',
+          nombres: values[2] || '',
+          apellidos: values[3] || '',
+          periodo: values[4] || '',
+          asignatura: values[5] || '',
+          regional: values[6] || '',
+          temas: values[7] || '',
+          url: values[8] || '#'
+        };
       });
     }
 
@@ -250,6 +255,10 @@
       const periodos = [...new Set(projectsData.map(item => item.periodo).filter(Boolean))];
       const asignaturas = [...new Set(projectsData.map(item => item.asignatura).filter(Boolean))];
       const regionales = [...new Set(projectsData.map(item => item.regional).filter(Boolean))];
+
+      selectPeriodo.innerHTML = '<option value="">Todos los Periodos</option>';
+      selectAsignatura.innerHTML = '<option value="">Todas las Asignaturas</option>';
+      selectRegional.innerHTML = '<option value="">Todas las Regionales</option>';
 
       periodos.forEach(p => selectPeriodo.add(new Option(p, p)));
       asignaturas.forEach(a => selectAsignatura.add(new Option(a, a)));
@@ -294,10 +303,9 @@
       }
 
       data.forEach(item => {
-        const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()) : [];
+        const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()).filter(Boolean) : [];
         const tagsHtml = temasArray.map(t => `<span class="badge">${t}</span>`).join('');
         
-        // Formatear autor si existen nombres o apellidos
         const nombreCompleto = `${item.nombres || ''} ${item.apellidos || ''}`.trim();
         const autorHtml = nombreCompleto ? `<div class="author">Autor: ${nombreCompleto}</div>` : '';
 
