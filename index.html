@@ -41,7 +41,6 @@
       margin-top: 0;
     }
 
-    /* Panel de Búsqueda y Filtros */
     .filter-panel {
       background: var(--card-bg);
       padding: 1.5rem;
@@ -72,7 +71,6 @@
       border-color: var(--primary);
     }
 
-    /* Grilla de Recursos */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -150,7 +148,6 @@
       padding: 3rem 0;
     }
 
-    /* Paginación */
     .pagination-container {
       display: flex;
       justify-content: center;
@@ -196,7 +193,6 @@
       <p class="subtitle">Busca proyectos por nombre, autor, metadatos o filtra por categorías en tiempo real.</p>
     </header>
 
-    <!-- Panel de búsqueda -->
     <div class="filter-panel">
       <div class="search-group">
         <input type="text" id="searchInput" placeholder="Buscar por proyecto, nombres, apellidos, temas...">
@@ -221,12 +217,10 @@
       </div>
     </div>
 
-    <!-- Grilla de resultados -->
     <div class="grid" id="resourceGrid">
       <div class="no-results">Cargando base de datos...</div>
     </div>
 
-    <!-- Contenedor de Paginación -->
     <div class="pagination-container" id="paginationContainer"></div>
   </div>
 
@@ -266,9 +260,7 @@
       const lines = text.trim().split(/\r?\n/);
       if (lines.length < 2) return [];
 
-      const dataRows = lines.slice(1);
-
-      return dataRows.map(line => {
+      return lines.slice(1).map(line => {
         const values = [];
         const regex = /(?:^|,)(?:"([^"]*)"|([^,]*))/g;
         let match;
@@ -289,7 +281,7 @@
           temas: values[7] || '',
           url: values[8] || '#'
         };
-      });
+      }).filter(item => item.proyecto || item.nombres);
     }
 
     function populateFilterOptions() {
@@ -322,12 +314,12 @@
       const isSearching = query !== '' || selectedPeriodo !== '' || selectedAsignatura !== '' || selectedRegional !== '';
 
       if (!isSearching) {
-        // VISTA INICIAL: Tomar de abajo hacia arriba máximo 10 registros
-        const top10Recent = [...projectsData].reverse().slice(0, 10);
-        renderCards(top10Recent);
-        paginationContainer.innerHTML = ''; 
+        // INICIO: Mostrar estrictamente los últimos 10 de abajo hacia arriba
+        const top10 = [...projectsData].reverse().slice(0, 10);
+        renderCards(top10);
+        paginationContainer.innerHTML = '';
       } else {
-        // VISTA DE BÚSQUEDA: Mostrar coincidentes con paginación de 20 en 20
+        // BÚSQUEDA: Filtrar todos los coincidentes
         currentFilteredData = projectsData.filter(item => {
           const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
                                 (item.nombres && item.nombres.toLowerCase().includes(query)) ||
@@ -367,7 +359,7 @@
     function renderCards(data) {
       grid.innerHTML = '';
 
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         grid.innerHTML = '<div class="no-results">No hay elementos disponibles.</div>';
         return;
       }
