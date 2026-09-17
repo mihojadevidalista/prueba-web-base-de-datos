@@ -255,8 +255,6 @@
 
         populateFilterOptions();
         setupEventListeners();
-        
-        // Carga inicial: aplicar estado por defecto
         filterData();
       } catch (error) {
         console.error('Error:', error);
@@ -324,12 +322,12 @@
       const isSearching = query !== '' || selectedPeriodo !== '' || selectedAsignatura !== '' || selectedRegional !== '';
 
       if (!isSearching) {
-        // MODO INICIAL: Mostrar solo los últimos 10 agregados (sin paginación)
-        currentFilteredData = [...projectsData].reverse().slice(0, 10);
-        renderCards(currentFilteredData);
-        paginationContainer.innerHTML = ''; // Ocultar paginador
+        // VISTA INICIAL: Tomar de abajo hacia arriba máximo 10 registros
+        const top10Recent = [...projectsData].reverse().slice(0, 10);
+        renderCards(top10Recent);
+        paginationContainer.innerHTML = ''; 
       } else {
-        // MODO BÚSQUEDA: Filtrar todos los coincidentes
+        // VISTA DE BÚSQUEDA: Mostrar coincidentes con paginación de 20 en 20
         currentFilteredData = projectsData.filter(item => {
           const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
                                 (item.nombres && item.nombres.toLowerCase().includes(query)) ||
@@ -356,7 +354,6 @@
         return;
       }
 
-      // Asegurar que la página actual no exceda el límite
       if (currentPage > totalPages) currentPage = totalPages;
 
       const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -406,7 +403,6 @@
 
       if (totalPages <= 1) return;
 
-      // Botón Anterior
       const prevBtn = document.createElement('button');
       prevBtn.className = 'page-btn';
       prevBtn.innerText = '« Anterior';
@@ -414,7 +410,6 @@
       prevBtn.onclick = () => { currentPage--; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
       paginationContainer.appendChild(prevBtn);
 
-      // Botones Numéricos
       for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
         btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -423,7 +418,6 @@
         paginationContainer.appendChild(btn);
       }
 
-      // Botón Siguiente
       const nextBtn = document.createElement('button');
       nextBtn.className = 'page-btn';
       nextBtn.innerText = 'Siguiente »';
