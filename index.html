@@ -247,7 +247,9 @@ function populateFilterOptions(){
 }
 
 const isFeatured = i => i.destacado || DESTACADOS.includes(i.id);
-const imgOf = i => IMAGENES[i.id] || i.imagen || IMAGEN_DEFAULT;
+/* Convierte enlaces normales de Google Drive (.../file/d/ID/view) en enlaces que sí se muestran como imagen */
+const driveImg = u => { const m = /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]+)/.exec(u||''); return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : u; };
+const imgOf = i => driveImg(IMAGENES[i.id] || i.imagen || IMAGEN_DEFAULT);
 
 function thumb(i, badge){
   const src = imgOf(i);
