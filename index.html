@@ -214,6 +214,8 @@ const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura
 let sortMode = 'recent', perPage = 10, size = 'm';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* Normaliza texto para buscar sin importar tildes, mayúsculas ni ñ/n */
+const norm = t => String(t??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const safeUrl = u => /^https?:\/\//i.test(u) ? u : '#';
 
 async function fetchSheetData(){
@@ -354,7 +356,8 @@ function render(){
   renderActive(q);
 
   filtered = data.filter(i=>{
-    const hay = !q || [i.proyecto,i.nombres,i.apellidos,`${i.nombres} ${i.apellidos}`,i.temas,i.asignatura].some(v=>v.toLowerCase().includes(q));
+    const nq = norm(q);
+    const hay = !q || [i.proyecto,i.nombres,i.apellidos,`${i.nombres} ${i.apellidos}`,i.temas,i.asignatura].some(v=>norm(v).includes(nq));
     return hay && (!el.per.value||i.periodo===el.per.value) && (!el.sem.value||i.semestre===el.sem.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
   });
   if(sortMode==='old') filtered.sort((a,b)=>a.idx-b.idx);
