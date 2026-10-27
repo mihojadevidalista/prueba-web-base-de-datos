@@ -245,7 +245,7 @@ function parseCSV(text){
       id:values[0]||'', proyecto:values[1]||'', nombres:[values[2],values[3],values[4]].filter(Boolean).join(', '), apellidos:'',
       periodo:values[13]||'', semestre:values[14]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
       url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||''), suma:parseFloat(values[11])||0, votos:parseInt(values[12])||0,
-      video:values[15]||'', experiencia:values[16]||''
+      video:values[15]||'', experiencia:values[16]||'', galeria:values[17]||''
     };
   }).filter(i=>i.proyecto||i.nombres);
 }
@@ -273,7 +273,10 @@ function thumb(i, badge){
 }
 function phHtml(h,l){ return `<div class="ph" style="background:linear-gradient(135deg,hsl(${h},48%,38%),hsl(${h+25},50%,52%))">${l}</div>`; }
 
-const xlinks = i => (i.video||i.experiencia) ? `<div class="xlinks">${i.video?`<a class="xlink" href="${esc(safeUrl(i.video))}" target="_blank" rel="noopener noreferrer">▶ Video</a>`:''}${i.experiencia?`<a class="xlink" href="${esc(safeUrl(i.experiencia))}" target="_blank" rel="noopener noreferrer">✦ Experiencia</a>`:''}</div>` : '';
+// Galería virtual (columna R): solo se muestra si la celda trae un enlace de carpeta de Drive
+const tieneGaleria = i => /\/folders\/[\w-]{10,}|[?&]id=[\w-]{10,}/.test(i.galeria||'');
+const galeriaLink = i => tieneGaleria(i) ? `<a class="xlink" href="galeria.html?proyecto=${encodeURIComponent(i.id)}" target="_blank" rel="noopener">🖼 Galería</a>` : '';
+const xlinks = i => (i.video||i.experiencia||tieneGaleria(i)) ? `<div class="xlinks">${i.video?`<a class="xlink" href="${esc(safeUrl(i.video))}" target="_blank" rel="noopener noreferrer">▶ Video</a>`:''}${i.experiencia?`<a class="xlink" href="${esc(safeUrl(i.experiencia))}" target="_blank" rel="noopener noreferrer">✦ Experiencia</a>`:''}${galeriaLink(i)}</div>` : '';
 
 function card(i){
   const tags = i.temas.split(',').map(t=>t.trim()).filter(Boolean).slice(0,4)
