@@ -20,6 +20,11 @@ body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;backgrou
 .hero h1{margin:0 0 .5rem;font-size:clamp(1.8rem,4vw,2.6rem);color:var(--green-d);letter-spacing:-.02em}
 .hero p{margin:0;color:var(--muted);max-width:60ch;font-size:1.05rem}
 
+/* Banner superior (imagen a todo el ancho) */
+.hero.banner{padding:0;background:none;border-bottom:none;line-height:0}
+.hero.banner img{display:block;width:100%;height:auto}
+.hero.banner + main .panel{margin-top:1.25rem}
+
 /* Panel de búsqueda */
 .panel{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px -12px rgba(52,112,26,.25);padding:1.25rem;margin-top:-3.5rem;position:relative}
 .search{position:relative}
@@ -143,11 +148,8 @@ footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem
 </head>
 <body>
 
-<header class="hero">
-  <div class="container">
-    <h1>Repositorio de Proyectos y Recursos</h1>
-    <p>Encuentra trabajos de semestres anteriores por nombre, autor, tema, periodo, asignatura o regional.</p>
-  </div>
+<header class="hero banner">
+  <img src="imagen/banner.png" alt="Repositorio de Proyectos y Recursos" onerror="this.style.display='none'">
 </header>
 
 <main class="container">
