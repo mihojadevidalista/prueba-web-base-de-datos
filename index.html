@@ -1,445 +1,321 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repositorio de Recursos y Proyectos</title>
-  <style>
-    :root {
-      --primary: #2563eb;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --border: #e2e8f0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repositorio de Proyectos y Recursos</title>
+<style>
+:root{
+  --green:#4f9a2c; --green-d:#34701a; --green-l:#eef7e6; --green-m:#cfe6bd;
+  --bg:#fbfdf8; --card:#fff; --text:#1f2a1a; --muted:#66725e; --border:#e1e9d8;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.container{max-width:1160px;margin:0 auto;padding:0 1.25rem}
 
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 2rem;
-    }
+/* Hero */
+.hero{background:var(--green-l);border-bottom:1px solid var(--green-m);padding:2.75rem 0 5.5rem}
+.hero h1{margin:0 0 .5rem;font-size:clamp(1.8rem,4vw,2.6rem);color:var(--green-d);letter-spacing:-.02em}
+.hero p{margin:0;color:var(--muted);max-width:60ch;font-size:1.05rem}
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+/* Panel de búsqueda */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px -12px rgba(52,112,26,.25);padding:1.25rem;margin-top:-3.5rem;position:relative}
+.search{position:relative}
+.search svg{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:20px;height:20px;stroke:var(--muted)}
+input,select{width:100%;font:inherit;padding:.8rem 1rem;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+.search input{padding-left:2.9rem;font-size:1.05rem;border-width:2px;border-color:var(--green-m)}
+input:focus,select:focus{border-color:var(--green);outline:none;box-shadow:0 0 0 3px var(--green-l)}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-top:.9rem}
+.filters label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.25rem;font-weight:600}
+.active-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.9rem;min-height:0}
+.chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-l);color:var(--green-d);border:1px solid var(--green-m);border-radius:999px;padding:.25rem .5rem .25rem .8rem;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit}
+.chip:hover{background:var(--green-m)}
+.link-btn{background:none;border:0;color:var(--green-d);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:.25rem}
 
-    header {
-      margin-bottom: 2rem;
-      text-align: center;
-    }
+/* Secciones */
+section{margin-top:2.5rem}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.sec-head h2{margin:0;font-size:1.45rem;letter-spacing:-.01em}
+.sec-head .sub{color:var(--muted);font-size:.95rem}
+.sort{width:auto;min-width:190px}
 
-    h1 {
-      margin-bottom: 0.5rem;
-      color: #0f172a;
-    }
+/* Tarjetas */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:1.4rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}
+.card:hover{box-shadow:0 14px 28px -14px rgba(52,112,26,.35);border-color:var(--green-m);transform:translateY(-2px)}
+.thumb{position:relative;aspect-ratio:16/9;background:var(--green-l);overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ph{width:100%;height:100%;display:grid;place-items:center;color:rgba(255,255,255,.92);font-size:2.6rem;font-weight:700;letter-spacing:.02em}
+.pill{position:absolute;left:.7rem;top:.7rem;background:rgba(255,255,255,.94);color:var(--green-d);font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:999px}
+.star{left:auto;right:.7rem;background:var(--green);color:#fff}
+.body{padding:1.1rem 1.2rem 1.2rem;display:flex;flex-direction:column;gap:.6rem;flex:1}
+.body h3{margin:0;font-size:1.1rem;line-height:1.3;color:#14210f;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.author{font-size:.9rem;font-weight:600;color:var(--green-d)}
+.meta{font-size:.85rem;color:var(--muted);display:grid;gap:.15rem}
+.meta b{color:var(--text);font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.tag{background:var(--green-l);color:var(--green-d);border:0;border-radius:6px;padding:.2rem .55rem;font:inherit;font-size:.78rem;font-weight:600;cursor:pointer}
+.tag:hover{background:var(--green-m)}
+.spacer{flex:1}
+.btn{display:inline-block;text-align:center;background:var(--green);color:#fff;text-decoration:none;font-weight:600;padding:.7rem 1rem;border-radius:10px;border:0;font:inherit;font-weight:600;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--green-d)}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:3rem 1rem;background:var(--card);border:1px dashed var(--green-m);border-radius:var(--r)}
+.empty b{display:block;color:var(--text);font-size:1.1rem;margin-bottom:.3rem}
+.skel{height:330px;border-radius:var(--r);background:linear-gradient(90deg,#eef3e8,#f7faf4,#eef3e8);background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
 
-    p.subtitle {
-      color: #64748b;
-      margin-top: 0;
-    }
+/* Paginación */
+.pager{display:flex;justify-content:center;align-items:center;gap:.4rem;flex-wrap:wrap;margin:2.5rem 0 1rem}
+.pg{min-width:2.4rem;height:2.4rem;padding:0 .8rem;background:#fff;border:1px solid var(--border);border-radius:8px;font:inherit;font-weight:600;color:var(--text);cursor:pointer}
+.pg:hover:not(:disabled){border-color:var(--green);color:var(--green-d)}
+.pg.on{background:var(--green);border-color:var(--green);color:#fff}
+.pg:disabled{opacity:.4;cursor:not-allowed}
+.dots{color:var(--muted);padding:0 .2rem}
 
-    /* Panel de Búsqueda y Filtros */
-    .filter-panel {
-      background: var(--card-bg);
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-      margin-bottom: 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .search-group {
-      grid-column: 1 / -1;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      box-sizing: border-box;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-    }
-
-    /* Título dinámico de sección */
-    .section-title {
-      font-size: 1.4rem;
-      color: #0f172a;
-      margin-bottom: 1.25rem;
-      font-weight: 600;
-    }
-
-    /* Grilla de Recursos */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 1.5rem;
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .card h3 {
-      margin-top: 0;
-      margin-bottom: 0.25rem;
-      font-size: 1.2rem;
-      color: #0f172a;
-    }
-
-    .author {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 0.75rem;
-    }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .badge {
-      background: #eff6ff;
-      color: #1d4ed8;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 500;
-    }
-
-    .meta-info {
-      font-size: 0.85rem;
-      color: #64748b;
-      margin-bottom: 1rem;
-      line-height: 1.4;
-    }
-
-    .btn-link {
-      display: inline-block;
-      text-align: center;
-      background-color: var(--primary);
-      color: white;
-      text-decoration: none;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: background-color 0.2s;
-    }
-
-    .btn-link:hover {
-      background-color: #1d4ed8;
-    }
-
-    .no-results {
-      grid-column: 1 / -1;
-      text-align: center;
-      color: #64748b;
-      padding: 3rem 0;
-    }
-
-    /* Paginación */
-    .pagination-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 2.5rem;
-      flex-wrap: wrap;
-    }
-
-    .page-btn {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.5rem 0.85rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-
-    .page-btn:hover:not(:disabled) {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-
-    .page-btn.active {
-      background-color: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .page-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  </style>
+/* Vista previa (modal) */
+.modal{position:fixed;inset:0;background:rgba(20,33,15,.55);display:none;align-items:center;justify-content:center;padding:1rem;z-index:50}
+.modal.open{display:flex}
+.dialog{background:#fff;border-radius:18px;max-width:760px;width:100%;max-height:92vh;overflow:auto;position:relative}
+.dialog .thumb{aspect-ratio:21/9;border-radius:0}
+.dialog .body{padding:1.5rem 1.75rem 1.75rem;gap:.9rem}
+.dialog h3{font-size:1.5rem;-webkit-line-clamp:unset;display:block}
+.close{position:absolute;right:.8rem;top:.8rem;width:2.3rem;height:2.3rem;border-radius:50%;border:0;background:rgba(255,255,255,.95);font-size:1.3rem;cursor:pointer;z-index:2}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem}
+.info div{background:var(--green-l);border-radius:10px;padding:.6rem .9rem;font-size:.9rem}
+.info span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}
+footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:520px){.hero{padding-top:2rem}}
+</style>
 </head>
 <body>
 
+<header class="hero">
   <div class="container">
-    <header>
-      <h1>Repositorio de Proyectos y Recursos</h1>
-      <p class="subtitle">Busca proyectos por nombre, autor, metadatos o filtra por categorías en tiempo real.</p>
-    </header>
+    <h1>Repositorio de Proyectos y Recursos</h1>
+    <p>Encuentra trabajos de semestres anteriores por nombre, autor, tema, periodo, asignatura o regional.</p>
+  </div>
+</header>
 
-    <div class="filter-panel">
-      <div class="search-group">
-        <input type="text" id="searchInput" placeholder="Buscar por proyecto, nombres, apellidos, temas...">
-      </div>
-
-      <div>
-        <select id="filterPeriodo">
-          <option value="">Todos los Periodos</option>
-        </select>
-      </div>
-
-      <div>
-        <select id="filterAsignatura">
-          <option value="">Todas las Asignaturas</option>
-        </select>
-      </div>
-
-      <div>
-        <select id="filterRegional">
-          <option value="">Todas las Regionales</option>
-        </select>
-      </div>
+<main class="container">
+  <div class="panel">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="searchInput" placeholder="Busca por proyecto, nombre, apellido o tema" aria-label="Buscar">
     </div>
-
-    <!-- Título de sección dinámico -->
-    <h2 class="section-title" id="sectionTitle"></h2>
-
-    <div class="grid" id="resourceGrid">
-      <div class="no-results">Cargando base de datos...</div>
+    <div class="filters">
+      <div><label for="filterPeriodo">Periodo</label><select id="filterPeriodo"><option value="">Todos los periodos</option></select></div>
+      <div><label for="filterAsignatura">Asignatura</label><select id="filterAsignatura"><option value="">Todas las asignaturas</option></select></div>
+      <div><label for="filterRegional">Regional</label><select id="filterRegional"><option value="">Todas las regionales</option></select></div>
     </div>
-
-    <div class="pagination-container" id="paginationContainer"></div>
+    <div class="active-row" id="activeRow"></div>
   </div>
 
-  <script>
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScJgTawvb8Xt4ihxUbMXBJCr6FO5XSPwDq92qggbXq-yr3wySu434_STias-giNTd3YFt8eN8fcN6d/pub?gid=0&single=true&output=csv';
+  <div id="view"><section><div class="grid"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></section></div>
+  <div class="pager" id="pager"></div>
+</main>
 
-    let projectsData = [];
-    let currentFilteredData = [];
-    let currentPage = 1;
-    const ITEMS_PER_PAGE = 20;
+<footer>Repositorio de proyectos · Universidad</footer>
 
-    const grid = document.getElementById('resourceGrid');
-    const searchInput = document.getElementById('searchInput');
-    const selectPeriodo = document.getElementById('filterPeriodo');
-    const selectAsignatura = document.getElementById('filterAsignatura');
-    const selectRegional = document.getElementById('filterRegional');
-    const paginationContainer = document.getElementById('paginationContainer');
-    const sectionTitle = document.getElementById('sectionTitle');
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Vista previa del proyecto"><div class="dialog" id="dialog"></div></div>
 
-    async function fetchSheetData() {
-      try {
-        const response = await fetch(SHEET_URL);
-        if (!response.ok) throw new Error('Error en la descarga');
-        
-        const csvText = await response.text();
-        projectsData = parseCSV(csvText);
+<script>
+/* ============ CONFIGURACIÓN (editable) ============ */
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScJgTawvb8Xt4ihxUbMXBJCr6FO5XSPwDq92qggbXq-yr3wySu434_STias-giNTd3YFt8eN8fcN6d/pub?gid=0&single=true&output=csv';
+const ITEMS_PER_PAGE = 12;   // resultados por página al buscar
+const RECENT_COUNT = 8;      // proyectos en "Recientes"
 
-        populateFilterOptions();
-        setupEventListeners();
-        filterData();
-      } catch (error) {
-        console.error('Error:', error);
-        grid.innerHTML = '<div class="no-results">Ocurrió un error al cargar la base de datos.</div>';
-      }
-    }
+/* Imágenes de vista previa: pon aquí el ID del proyecto (columna A) y la URL de la imagen.
+   Si un proyecto no está aquí ni tiene imagen en la columna J del Sheet, se usa una imagen por defecto. */
+const IMAGENES = {
+  // "12": "https://ejemplo.com/imagen12.jpg",
+};
+/* Proyectos destacados ("Los mejores trabajos"): lista de IDs, o escribe "si" en la columna K del Sheet. */
+const DESTACADOS = [
+  // "3", "15", "27",
+];
+/* Imagen por defecto (opcional). Déjala vacía para usar el diseño verde con la inicial. */
+const IMAGEN_DEFAULT = '';
+/* ================================================== */
 
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length < 2) return [];
+let data = [];
+let filtered = [];
+let page = 1;
+const $ = id => document.getElementById(id);
+const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura'), reg:$('filterRegional'),
+             view:$('view'), pager:$('pager'), active:$('activeRow'), modal:$('modal'), dialog:$('dialog') };
+let sortMode = 'recent';
 
-      return lines.slice(1).map(line => {
-        const values = [];
-        const regex = /(?:^|,)(?:"([^"]*)"|([^,]*))/g;
-        let match;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u) ? u : '#';
 
-        while ((match = regex.exec(line)) !== null) {
-          let val = match[1] !== undefined ? match[1] : match[2];
-          values.push(val ? val.trim() : '');
-        }
+async function fetchSheetData(){
+  try{
+    const r = await fetch(SHEET_URL);
+    if(!r.ok) throw new Error('Error en la descarga');
+    data = parseCSV(await r.text()).map((d,i)=>({...d,idx:i}));
+    populateFilterOptions();
+    ['input','change'].forEach(ev=>{
+      [el.q,el.per,el.asi,el.reg].forEach(n=>n.addEventListener(ev,()=>{page=1;render();}));
+    });
+    render();
+  }catch(e){
+    console.error(e);
+    el.view.innerHTML='<div class="grid"><div class="empty"><b>No pudimos cargar los proyectos</b>Revisa tu conexión y recarga la página.</div></div>';
+  }
+}
 
-        return {
-          id: values[0] || '',
-          proyecto: values[1] || '',
-          nombres: values[2] || '',
-          apellidos: values[3] || '',
-          periodo: values[4] || '',
-          asignatura: values[5] || '',
-          regional: values[6] || '',
-          temas: values[7] || '',
-          url: values[8] || '#'
-        };
-      }).filter(item => item.proyecto || item.nombres);
-    }
+/* Estructura original de columnas (A–I) intacta. Columnas opcionales nuevas: J = imagen, K = destacado */
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(lines.length<2) return [];
+  return lines.slice(1).map(line=>{
+    const values=[]; const regex=/(?:^|,)(?:"([^"]*)"|([^,]*))/g; let m;
+    while((m=regex.exec(line))!==null){ let v=m[1]!==undefined?m[1]:m[2]; values.push(v?v.trim():''); }
+    return {
+      id:values[0]||'', proyecto:values[1]||'', nombres:values[2]||'', apellidos:values[3]||'',
+      periodo:values[4]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
+      url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||'')
+    };
+  }).filter(i=>i.proyecto||i.nombres);
+}
 
-    function populateFilterOptions() {
-      const periodos = [...new Set(projectsData.map(item => item.periodo).filter(Boolean))];
-      const asignaturas = [...new Set(projectsData.map(item => item.asignatura).filter(Boolean))];
-      const regionales = [...new Set(projectsData.map(item => item.regional).filter(Boolean))];
+function populateFilterOptions(){
+  const uniq = k => [...new Set(data.map(i=>i[k]).filter(Boolean))];
+  uniq('periodo').sort().reverse().forEach(v=>el.per.add(new Option(v,v)));
+  uniq('asignatura').sort((a,b)=>a.localeCompare(b,'es')).forEach(v=>el.asi.add(new Option(v,v)));
+  uniq('regional').sort((a,b)=>a.localeCompare(b,'es')).forEach(v=>el.reg.add(new Option(v,v)));
+}
 
-      selectPeriodo.innerHTML = '<option value="">Todos los Periodos</option>';
-      selectAsignatura.innerHTML = '<option value="">Todas las Asignaturas</option>';
-      selectRegional.innerHTML = '<option value="">Todas las Regionales</option>';
+const isFeatured = i => i.destacado || DESTACADOS.includes(i.id);
+const imgOf = i => IMAGENES[i.id] || i.imagen || IMAGEN_DEFAULT;
 
-      periodos.forEach(p => selectPeriodo.add(new Option(p, p)));
-      asignaturas.forEach(a => selectAsignatura.add(new Option(a, a)));
-      regionales.forEach(r => selectRegional.add(new Option(r, r)));
-    }
+function thumb(i, badge){
+  const src = imgOf(i);
+  const hue = 85 + ([...(i.asignatura||'x')].reduce((a,c)=>a+c.charCodeAt(0),0) % 80);
+  const inner = src
+    ? `<img src="${esc(safeUrl(src))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML=phHtml(${hue},'${esc((i.proyecto||'P')[0].toUpperCase())}')">`
+    : phHtml(hue,(i.proyecto||'P')[0].toUpperCase());
+  return `<div class="thumb">${inner}${i.periodo?`<span class="pill">${esc(i.periodo)}</span>`:''}${badge&&isFeatured(i)?'<span class="pill star">★ Destacado</span>':''}</div>`;
+}
+function phHtml(h,l){ return `<div class="ph" style="background:linear-gradient(135deg,hsl(${h},48%,38%),hsl(${h+25},50%,52%))">${l}</div>`; }
 
-    function setupEventListeners() {
-      searchInput.addEventListener('input', () => { currentPage = 1; filterData(); });
-      selectPeriodo.addEventListener('change', () => { currentPage = 1; filterData(); });
-      selectAsignatura.addEventListener('change', () => { currentPage = 1; filterData(); });
-      selectRegional.addEventListener('change', () => { currentPage = 1; filterData(); });
-    }
+function card(i){
+  const tags = i.temas.split(',').map(t=>t.trim()).filter(Boolean).slice(0,4)
+    .map(t=>`<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
+  const autor = `${i.nombres} ${i.apellidos}`.trim();
+  return `<article class="card" data-i="${i.idx}" tabindex="0">
+    ${thumb(i,true)}
+    <div class="body">
+      <h3>${esc(i.proyecto||'Sin nombre')}</h3>
+      ${autor?`<div class="author">${esc(autor)}</div>`:''}
+      <div class="meta"><span><b>Asignatura:</b> ${esc(i.asignatura||'N/A')}</span><span><b>Regional:</b> ${esc(i.regional||'N/A')}</span></div>
+      <div class="tags">${tags}</div>
+      <div class="spacer"></div>
+      <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a>
+    </div></article>`;
+}
 
-    function filterData() {
-      const query = searchInput.value.toLowerCase().trim();
-      const selectedPeriodo = selectPeriodo.value;
-      const selectedAsignatura = selectAsignatura.value;
-      const selectedRegional = selectRegional.value;
+const section = (title, sub, items) => `<section><div class="sec-head"><div><h2>${title}</h2><div class="sub">${sub}</div></div></div><div class="grid">${items.map(card).join('')}</div></section>`;
 
-      const isSearching = query !== '' || selectedPeriodo !== '' || selectedAsignatura !== '' || selectedRegional !== '';
+function render(){
+  const q = el.q.value.toLowerCase().trim();
+  const hasFilter = q || el.per.value || el.asi.value || el.reg.value;
+  renderActive(q);
 
-      if (!isSearching) {
-        // MOSTRAR TÍTULO SOLO EN VISTA INICIAL
-        sectionTitle.innerText = 'Proyectos Recientes';
-        sectionTitle.style.display = 'block';
+  if(!hasFilter){
+    const recent = [...data].reverse();
+    const feat = data.filter(isFeatured).slice(0,6);
+    let html = '';
+    if(feat.length) html += section('Los mejores trabajos','Selección destacada del repositorio',feat);
+    html += section('Proyectos recientes','Lo último que se ha agregado',recent.slice(0,RECENT_COUNT));
+    html += `<section><div class="empty" style="padding:1.5rem"><b>${data.length} proyectos en total</b>Usa el buscador o los filtros para explorarlos todos.</div></section>`;
+    el.view.innerHTML = html;
+    el.pager.innerHTML = '';
+    return;
+  }
 
-        const top10 = [...projectsData].reverse().slice(0, 10);
-        renderCards(top10);
-        paginationContainer.innerHTML = '';
-      } else {
-        // OCULTAR TÍTULO CUANDO HAY BÚSQUEDA / FILTROS
-        sectionTitle.innerText = '';
-        sectionTitle.style.display = 'none';
+  filtered = data.filter(i=>{
+    const hay = !q || [i.proyecto,i.nombres,i.apellidos,`${i.nombres} ${i.apellidos}`,i.temas,i.asignatura].some(v=>v.toLowerCase().includes(q));
+    return hay && (!el.per.value||i.periodo===el.per.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
+  });
+  if(sortMode==='old') filtered.sort((a,b)=>a.idx-b.idx);
+  else if(sortMode==='az') filtered.sort((a,b)=>a.proyecto.localeCompare(b.proyecto,'es'));
+  else filtered.sort((a,b)=>b.idx-a.idx);
 
-        currentFilteredData = projectsData.filter(item => {
-          const matchesSearch = (item.proyecto && item.proyecto.toLowerCase().includes(query)) || 
-                                (item.nombres && item.nombres.toLowerCase().includes(query)) ||
-                                (item.apellidos && item.apellidos.toLowerCase().includes(query)) ||
-                                (item.temas && item.temas.toLowerCase().includes(query));
+  const pages = Math.ceil(filtered.length/ITEMS_PER_PAGE);
+  if(page>pages) page=Math.max(1,pages);
+  const slice = filtered.slice((page-1)*ITEMS_PER_PAGE, page*ITEMS_PER_PAGE);
+  const n = filtered.length;
+  const head = `<div class="sec-head"><div><h2>${n} ${n===1?'resultado':'resultados'}</h2><div class="sub">${n?`Mostrando ${(page-1)*ITEMS_PER_PAGE+1}–${(page-1)*ITEMS_PER_PAGE+slice.length}`:''}</div></div>
+    <select class="sort" id="sortSel" aria-label="Ordenar">
+      <option value="recent"${sortMode==='recent'?' selected':''}>Más recientes</option>
+      <option value="old"${sortMode==='old'?' selected':''}>Más antiguos</option>
+      <option value="az"${sortMode==='az'?' selected':''}>Nombre (A–Z)</option></select></div>`;
+  const body = n ? `<div class="grid">${slice.map(card).join('')}</div>`
+    : `<div class="grid"><div class="empty"><b>No encontramos proyectos con esa búsqueda</b>Prueba con otra palabra o quita algún filtro.<br><br><button class="btn" id="clearEmpty">Quitar filtros</button></div></div>`;
+  el.view.innerHTML = `<section>${head}${body}</section>`;
+  const s = $('sortSel'); if(s) s.onchange = e=>{sortMode=e.target.value;page=1;render();};
+  const c = $('clearEmpty'); if(c) c.onclick = clearAll;
+  renderPager(pages);
+}
 
-          const matchesPeriodo = !selectedPeriodo || item.periodo === selectedPeriodo;
-          const matchesAsignatura = !selectedAsignatura || item.asignatura === selectedAsignatura;
-          const matchesRegional = !selectedRegional || item.regional === selectedRegional;
+function renderActive(q){
+  const items=[];
+  if(q) items.push(['q',`Búsqueda: ${el.q.value.trim()}`]);
+  if(el.per.value) items.push(['per',el.per.value]);
+  if(el.asi.value) items.push(['asi',el.asi.value]);
+  if(el.reg.value) items.push(['reg',el.reg.value]);
+  el.active.innerHTML = items.length
+    ? items.map(([k,t])=>`<button class="chip" data-clear="${k}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join('')+'<button class="link-btn" data-clear="all">Limpiar todo</button>'
+    : '';
+}
+function clearAll(){ el.q.value=''; el.per.value=''; el.asi.value=''; el.reg.value=''; page=1; render(); }
 
-          return matchesSearch && matchesPeriodo && matchesAsignatura && matchesRegional;
-        });
+function renderPager(pages){
+  el.pager.innerHTML='';
+  if(pages<=1) return;
+  const go = p => { page=p; render(); window.scrollTo({top:el.view.offsetTop-120,behavior:'smooth'}); };
+  const mk = (txt,p,{on=false,dis=false}={}) => { const b=document.createElement('button'); b.className='pg'+(on?' on':''); b.textContent=txt; b.disabled=dis; if(on) b.setAttribute('aria-current','page'); b.onclick=()=>go(p); el.pager.appendChild(b); };
+  mk('‹ Anterior',page-1,{dis:page===1});
+  const set=new Set([1,pages,page,page-1,page+1,page-2,page+2].filter(p=>p>=1&&p<=pages));
+  let last=0;
+  [...set].sort((a,b)=>a-b).forEach(p=>{
+    if(p-last>1){ const d=document.createElement('span'); d.className='dots'; d.textContent='…'; el.pager.appendChild(d); }
+    mk(p,p,{on:p===page}); last=p;
+  });
+  mk('Siguiente ›',page+1,{dis:page===pages});
+}
 
-        renderPaginatedData();
-      }
-    }
+/* Vista previa */
+function openModal(i){
+  const autor=`${i.nombres} ${i.apellidos}`.trim();
+  const tags=i.temas.split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
+  el.dialog.innerHTML = `<button class="close" aria-label="Cerrar">×</button>${thumb(i,true)}
+    <div class="body"><h3>${esc(i.proyecto||'Sin nombre')}</h3>${autor?`<div class="author">${esc(autor)}</div>`:''}
+    <div class="info"><div><span>Periodo</span>${esc(i.periodo||'N/A')}</div><div><span>Asignatura</span>${esc(i.asignatura||'N/A')}</div><div><span>Regional</span>${esc(i.regional||'N/A')}</div></div>
+    ${tags?`<div><div class="sub" style="color:var(--muted);font-size:.8rem;font-weight:600;margin-bottom:.4rem">Temas</div><div class="tags">${tags}</div></div>`:''}
+    <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a></div>`;
+  el.modal.classList.add('open'); el.dialog.querySelector('.close').focus();
+}
+const closeModal=()=>el.modal.classList.remove('open');
 
-    function renderPaginatedData() {
-      const totalPages = Math.ceil(currentFilteredData.length / ITEMS_PER_PAGE);
+document.addEventListener('click',e=>{
+  const tag=e.target.closest('.tag'); const clr=e.target.closest('[data-clear]');
+  if(tag){ e.stopPropagation(); closeModal(); el.q.value=tag.dataset.tag; page=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,asi:el.asi,reg:el.reg})[k].value=''; page=1; render(); } return; }
+  if(e.target.closest('.close')||e.target===el.modal){ closeModal(); return; }
+  if(e.target.closest('.btn')) return;
+  const c=e.target.closest('.card'); if(c) openModal(data[+c.dataset.i]);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter'&&e.target.classList.contains('card')) openModal(data[+e.target.dataset.i]);
+});
 
-      if (totalPages === 0) {
-        grid.innerHTML = '<div class="no-results">No se encontraron resultados que coincidan con la búsqueda.</div>';
-        paginationContainer.innerHTML = '';
-        return;
-      }
-
-      if (currentPage > totalPages) currentPage = totalPages;
-
-      const start = (currentPage - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE;
-      const pageData = currentFilteredData.slice(start, end);
-
-      renderCards(pageData);
-      renderPaginationControls(totalPages);
-    }
-
-    function renderCards(data) {
-      grid.innerHTML = '';
-
-      if (!data || data.length === 0) {
-        grid.innerHTML = '<div class="no-results">No hay elementos disponibles.</div>';
-        return;
-      }
-
-      data.forEach(item => {
-        const temasArray = item.temas ? item.temas.split(',').map(t => t.trim()).filter(Boolean) : [];
-        const tagsHtml = temasArray.map(t => `<span class="badge">${t}</span>`).join('');
-        
-        const nombreCompleto = `${item.nombres || ''} ${item.apellidos || ''}`.trim();
-        const autorHtml = nombreCompleto ? `<div class="author">Autor: ${nombreCompleto}</div>` : '';
-
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div>
-            <h3>${item.proyecto || 'Sin Nombre'}</h3>
-            ${autorHtml}
-            <div class="meta-info">
-              <strong>Periodo:</strong> ${item.periodo || 'N/A'}<br>
-              <strong>Asignatura:</strong> ${item.asignatura || 'N/A'}<br>
-              <strong>Regional:</strong> ${item.regional || 'N/A'}
-            </div>
-            <div class="tags">${tagsHtml}</div>
-          </div>
-          <a href="${item.url || '#'}" target="_blank" rel="noopener noreferrer" class="btn-link">Ver Recurso / Contenido</a>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function renderPaginationControls(totalPages) {
-      paginationContainer.innerHTML = '';
-
-      if (totalPages <= 1) return;
-
-      const prevBtn = document.createElement('button');
-      prevBtn.className = 'page-btn';
-      prevBtn.innerText = '« Anterior';
-      prevBtn.disabled = currentPage === 1;
-      prevBtn.onclick = () => { currentPage--; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-      paginationContainer.appendChild(prevBtn);
-
-      for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement('button');
-        btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-        btn.innerText = i;
-        btn.onclick = () => { currentPage = i; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-        paginationContainer.appendChild(btn);
-      }
-
-      const nextBtn = document.createElement('button');
-      nextBtn.className = 'page-btn';
-      nextBtn.innerText = 'Siguiente »';
-      nextBtn.disabled = currentPage === totalPages;
-      nextBtn.onclick = () => { currentPage++; renderPaginatedData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-      paginationContainer.appendChild(nextBtn);
-    }
-
-    fetchSheetData();
-  </script>
+fetchSheetData();
+</script>
 </body>
 </html>
