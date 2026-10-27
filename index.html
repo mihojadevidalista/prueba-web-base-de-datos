@@ -25,6 +25,11 @@ body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;backgrou
 .hero.banner img{display:block;width:100%;height:auto}
 .hero.banner + main .panel{margin-top:1.25rem}
 
+/* Enlaces opcionales (video / experiencia): pequeños, solo si existen */
+.xlinks{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
+.xlink{display:inline-block;font-size:.76rem;font-weight:600;color:var(--green-d);background:#fff;border:1px solid var(--green-m);border-radius:999px;padding:.15rem .6rem;text-decoration:none}
+.xlink:hover{background:var(--green-l)}
+
 /* Panel de búsqueda */
 .panel{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px -12px rgba(52,112,26,.25);padding:1.25rem;margin-top:-3.5rem;position:relative}
 .search{position:relative}
@@ -237,7 +242,8 @@ function parseCSV(text){
     return {
       id:values[0]||'', proyecto:values[1]||'', nombres:[values[2],values[3],values[4]].filter(Boolean).join(', '), apellidos:'',
       periodo:values[13]||'', semestre:values[14]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
-      url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||''), suma:parseFloat(values[11])||0, votos:parseInt(values[12])||0
+      url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||''), suma:parseFloat(values[11])||0, votos:parseInt(values[12])||0,
+      video:values[15]||'', experiencia:values[16]||''
     };
   }).filter(i=>i.proyecto||i.nombres);
 }
@@ -265,6 +271,8 @@ function thumb(i, badge){
 }
 function phHtml(h,l){ return `<div class="ph" style="background:linear-gradient(135deg,hsl(${h},48%,38%),hsl(${h+25},50%,52%))">${l}</div>`; }
 
+const xlinks = i => (i.video||i.experiencia) ? `<div class="xlinks">${i.video?`<a class="xlink" href="${esc(safeUrl(i.video))}" target="_blank" rel="noopener noreferrer">▶ Video</a>`:''}${i.experiencia?`<a class="xlink" href="${esc(safeUrl(i.experiencia))}" target="_blank" rel="noopener noreferrer">✦ Experiencia</a>`:''}</div>` : '';
+
 function card(i){
   const tags = i.temas.split(',').map(t=>t.trim()).filter(Boolean).slice(0,4)
     .map(t=>`<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
@@ -278,6 +286,7 @@ function card(i){
       <div class="meta"><span><b>Asignatura:</b> ${esc(i.asignatura||'N/A')}</span><span><b>Regional:</b> ${esc(i.regional||'N/A')}</span></div>
       <div class="tags">${tags}</div>
       <div class="spacer"></div>
+      ${xlinks(i)}
       <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a>
     </div></article>`;
 }
@@ -402,6 +411,7 @@ function openModal(i){
     <div class="body">${rateBtn(i)}<h3>${esc(i.proyecto||'Sin nombre')}</h3>${autor?`<div class="author">${esc(autor)}</div>`:''}
     <div class="info"><div><span>Periodo</span>${esc(i.periodo||'N/A')}</div><div><span>Semestre</span>${esc(i.semestre||'N/A')}</div><div><span>Asignatura</span>${esc(i.asignatura||'N/A')}</div><div><span>Regional</span>${esc(i.regional||'N/A')}</div></div>
     ${tags?`<div><div class="sub" style="color:var(--muted);font-size:.8rem;font-weight:600;margin-bottom:.4rem">Temas</div><div class="tags">${tags}</div></div>`:''}
+    ${xlinks(i)}
     <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a></div>`;
   el.modal.classList.add('open'); el.dialog.querySelector('.close').focus();
 }
@@ -419,7 +429,7 @@ document.addEventListener('click',e=>{
   if(tag){ e.stopPropagation(); closeModal(); el.q.value=tag.dataset.tag; page=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,sem:el.sem,asi:el.asi,reg:el.reg})[k].value=''; page=1; render(); } return; }
   if(e.target.closest('.close')||e.target===el.modal){ closeModal(); return; }
-  if(e.target.closest('.btn')) return;
+  if(e.target.closest('.btn,.xlink')) return;
   const c=e.target.closest('.card'); if(c) openModal(data[+c.dataset.i]);
 });
 document.addEventListener('keydown',e=>{
