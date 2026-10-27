@@ -158,6 +158,7 @@ footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem
     </div>
     <div class="filters">
       <div><label for="filterPeriodo">Periodo</label><select id="filterPeriodo"><option value="">Todos los periodos</option></select></div>
+      <div><label for="filterSemestre">Semestre</label><select id="filterSemestre"><option value="">Todos los semestres</option></select></div>
       <div><label for="filterAsignatura">Asignatura</label><select id="filterAsignatura"><option value="">Todas las asignaturas</option></select></div>
       <div><label for="filterRegional">Regional</label><select id="filterRegional"><option value="">Todas las regionales</option></select></div>
     </div>
@@ -201,7 +202,7 @@ let data = [];
 let filtered = [];
 let page = 1;
 const $ = id => document.getElementById(id);
-const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura'), reg:$('filterRegional'),
+const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura'), reg:$('filterRegional'), sem:$('filterSemestre'),
              view:$('view'), side:$('side'), active:$('activeRow'), modal:$('modal'), dialog:$('dialog') };
 let sortMode = 'recent', perPage = 10, size = 'm';
 
@@ -215,7 +216,7 @@ async function fetchSheetData(){
     data = parseCSV(await r.text()).map((d,i)=>({...d,idx:i}));
     populateFilterOptions(); renderSide();
     ['input','change'].forEach(ev=>{
-      [el.q,el.per,el.asi,el.reg].forEach(n=>n.addEventListener(ev,()=>{page=1;render();}));
+      [el.q,el.per,el.sem,el.asi,el.reg].forEach(n=>n.addEventListener(ev,()=>{page=1;render();}));
     });
     render();
   }catch(e){
@@ -232,8 +233,8 @@ function parseCSV(text){
     const values=[]; const regex=/(?:^|,)(?:"([^"]*)"|([^,]*))/g; let m;
     while((m=regex.exec(line))!==null){ let v=m[1]!==undefined?m[1]:m[2]; values.push(v?v.trim():''); }
     return {
-      id:values[0]||'', proyecto:values[1]||'', nombres:values[2]||'', apellidos:values[3]||'',
-      periodo:values[4]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
+      id:values[0]||'', proyecto:values[1]||'', nombres:[values[2],values[3],values[4]].filter(Boolean).join(', '), apellidos:'',
+      periodo:values[13]||'', semestre:values[14]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
       url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||''), suma:parseFloat(values[11])||0, votos:parseInt(values[12])||0
     };
   }).filter(i=>i.proyecto||i.nombres);
@@ -242,6 +243,7 @@ function parseCSV(text){
 function populateFilterOptions(){
   const uniq = k => [...new Set(data.map(i=>i[k]).filter(Boolean))];
   uniq('periodo').sort().reverse().forEach(v=>el.per.add(new Option(v,v)));
+  for(let n=1;n<=9;n++) el.sem.add(new Option(n,String(n)));
   uniq('asignatura').sort((a,b)=>a.localeCompare(b,'es')).forEach(v=>el.asi.add(new Option(v,v)));
   uniq('regional').sort((a,b)=>a.localeCompare(b,'es')).forEach(v=>el.reg.add(new Option(v,v)));
 }
@@ -337,12 +339,12 @@ function renderSide(){
 
 function render(){
   const q = el.q.value.toLowerCase().trim();
-  const hasFilter = q || el.per.value || el.asi.value || el.reg.value;
+  const hasFilter = q || el.per.value || el.sem.value || el.asi.value || el.reg.value;
   renderActive(q);
 
   filtered = data.filter(i=>{
     const hay = !q || [i.proyecto,i.nombres,i.apellidos,`${i.nombres} ${i.apellidos}`,i.temas,i.asignatura].some(v=>v.toLowerCase().includes(q));
-    return hay && (!el.per.value||i.periodo===el.per.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
+    return hay && (!el.per.value||i.periodo===el.per.value) && (!el.sem.value||i.semestre===el.sem.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
   });
   if(sortMode==='old') filtered.sort((a,b)=>a.idx-b.idx);
   else if(sortMode==='top') filtered.sort((a,b)=>score(b)-score(a)||b.idx-a.idx);
@@ -372,13 +374,14 @@ function renderActive(q){
   const items=[];
   if(q) items.push(['q',`Búsqueda: ${el.q.value.trim()}`]);
   if(el.per.value) items.push(['per',el.per.value]);
+  if(el.sem.value) items.push(['sem','Semestre '+el.sem.value]);
   if(el.asi.value) items.push(['asi',el.asi.value]);
   if(el.reg.value) items.push(['reg',el.reg.value]);
   el.active.innerHTML = items.length
     ? items.map(([k,t])=>`<button class="chip" data-clear="${k}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join('')+'<button class="link-btn" data-clear="all">Limpiar todo</button>'
     : '';
 }
-function clearAll(){ el.q.value=''; el.per.value=''; el.asi.value=''; el.reg.value=''; page=1; render(); }
+function clearAll(){ el.q.value=''; el.per.value=''; el.sem.value=''; el.asi.value=''; el.reg.value=''; page=1; render(); }
 
 function pagerHtml(pages){
   if(pages<=1) return '';
@@ -395,7 +398,7 @@ function openModal(i){
   const tags=i.temas.split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
   el.dialog.innerHTML = `<button class="close" aria-label="Cerrar">×</button>${thumb(i,true)}
     <div class="body">${rateBtn(i)}<h3>${esc(i.proyecto||'Sin nombre')}</h3>${autor?`<div class="author">${esc(autor)}</div>`:''}
-    <div class="info"><div><span>Periodo</span>${esc(i.periodo||'N/A')}</div><div><span>Asignatura</span>${esc(i.asignatura||'N/A')}</div><div><span>Regional</span>${esc(i.regional||'N/A')}</div></div>
+    <div class="info"><div><span>Periodo</span>${esc(i.periodo||'N/A')}</div><div><span>Semestre</span>${esc(i.semestre||'N/A')}</div><div><span>Asignatura</span>${esc(i.asignatura||'N/A')}</div><div><span>Regional</span>${esc(i.regional||'N/A')}</div></div>
     ${tags?`<div><div class="sub" style="color:var(--muted);font-size:.8rem;font-weight:600;margin-bottom:.4rem">Temas</div><div class="tags">${tags}</div></div>`:''}
     <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a></div>`;
   el.modal.classList.add('open'); el.dialog.querySelector('.close').focus();
@@ -412,7 +415,7 @@ document.addEventListener('click',e=>{
   const mn=e.target.closest('.mini'); if(mn){ openModal(data[+mn.dataset.i]); return; }
   const tag=e.target.closest('.tag'); const clr=e.target.closest('[data-clear]');
   if(tag){ e.stopPropagation(); closeModal(); el.q.value=tag.dataset.tag; page=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
-  if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,asi:el.asi,reg:el.reg})[k].value=''; page=1; render(); } return; }
+  if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,sem:el.sem,asi:el.asi,reg:el.reg})[k].value=''; page=1; render(); } return; }
   if(e.target.closest('.close')||e.target===el.modal){ closeModal(); return; }
   if(e.target.closest('.btn')) return;
   const c=e.target.closest('.card'); if(c) openModal(data[+c.dataset.i]);
