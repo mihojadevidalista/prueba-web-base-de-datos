@@ -104,6 +104,19 @@ section{margin-top:0}
 .grid.l{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
 @media (max-width:900px){.layout{grid-template-columns:1fr}.side{position:static;max-height:none}}
 
+/* Calificación */
+.rate{align-self:flex-start;display:inline-flex;gap:.45rem;align-items:center;background:#fff8e6;border:1px solid #f1dca4;color:#7a5200;border-radius:999px;padding:.2rem .7rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer}
+.rate:hover{background:#fff1c9}
+.stars{color:#f0a020;letter-spacing:1px}
+#pop{position:fixed;z-index:80;background:#fff;border:1px solid var(--green-m);border-radius:14px;box-shadow:0 16px 36px -10px rgba(20,33,15,.4);padding:.9rem 1.1rem;width:250px;text-align:center}
+#pop[hidden]{display:none}
+.pop-t{font-weight:700;color:var(--green-d);margin-bottom:.4rem}
+.pop-stars{display:flex;justify-content:center;gap:.1rem;font-size:1.9rem;color:#f0a020}
+.pop-stars button{background:none;border:0;font:inherit;font-size:1.9rem;line-height:1;color:#d6dccb;cursor:pointer;padding:0 .1rem;transition:transform .1s}
+.pop-stars button.on{color:#f0a020}
+.pop-stars button:hover{transform:scale(1.15)}
+.pop-h{font-size:.85rem;color:var(--muted);margin-top:.4rem;min-height:1.2em}
+
 /* Paginación */
 .pager{display:flex;justify-content:center;align-items:center;gap:.4rem;flex-wrap:wrap;margin:1.25rem 0}
 .pg{min-width:2.4rem;height:2.4rem;padding:0 .8rem;background:#fff;border:1px solid var(--border);border-radius:8px;font:inherit;font-weight:600;color:var(--text);cursor:pointer}
@@ -161,9 +174,11 @@ footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Vista previa del proyecto"><div class="dialog" id="dialog"></div></div>
 
+<div id="pop" role="dialog" aria-label="Calificar proyecto" hidden></div>
+
 <script>
 /* ============ CONFIGURACIÓN (editable) ============ */
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScJgTawvb8Xt4ihxUbMXBJCr6FO5XSPwDq92qggbXq-yr3wySu434_STias-giNTd3YFt8eN8fcN6d/pub?gid=0&single=true&output=csv';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWHCJEyBaIdAw63qinCRnxEZUL-vy7vA5oFzVP5O6chwwIviLD0Sx7bjL3nNAlrHk5IkIuSbH1RL4q/pub?gid=2139860041&single=true&output=csv';
 const SIDE_COUNT = 5;        // cuántos proyectos salen en cada lista lateral (Top)
 
 /* Imágenes de vista previa: pon aquí el ID del proyecto (columna A) y la URL de la imagen.
@@ -177,6 +192,9 @@ const DESTACADOS = [
 ];
 /* Imagen por defecto (opcional). Déjala vacía para usar el diseño verde con la inicial. */
 const IMAGEN_DEFAULT = '';
+/* URL de la aplicación web de Google Apps Script que guarda las calificaciones en el Sheet.
+   Mientras esté vacía, las calificaciones solo se guardan en el navegador de quien vota (modo de prueba). */
+const RATING_API_URL = 'https://script.google.com/macros/s/AKfycby4MezTXy3AmvZCxO8jj4A7VWonZ4M2b0qrOfkV0LHTEkO6-WX8ze1bB0KGlirmsvk/exec';
 /* ================================================== */
 
 let data = [];
@@ -216,7 +234,7 @@ function parseCSV(text){
     return {
       id:values[0]||'', proyecto:values[1]||'', nombres:values[2]||'', apellidos:values[3]||'',
       periodo:values[4]||'', asignatura:values[5]||'', regional:values[6]||'', temas:values[7]||'',
-      url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||'')
+      url:values[8]||'#', imagen:values[9]||'', destacado:/^(si|sí|x|1|true)$/i.test(values[10]||''), suma:parseFloat(values[11])||0, votos:parseInt(values[12])||0
     };
   }).filter(i=>i.proyecto||i.nombres);
 }
@@ -248,6 +266,7 @@ function card(i){
   return `<article class="card" data-i="${i.idx}" tabindex="0">
     ${thumb(i,true)}
     <div class="body">
+      ${rateBtn(i)}
       <h3>${esc(i.proyecto||'Sin nombre')}</h3>
       ${autor?`<div class="author">${esc(autor)}</div>`:''}
       <div class="meta"><span><b>Asignatura:</b> ${esc(i.asignatura||'N/A')}</span><span><b>Regional:</b> ${esc(i.regional||'N/A')}</span></div>
@@ -259,18 +278,59 @@ function card(i){
 
 const section = (title, sub, items) => `<section><div class="sec-head"><div><h2>${title}</h2><div class="sub">${sub}</div></div></div><div class="grid">${items.map(card).join('')}</div></section>`;
 
+/* ---- Calificaciones ---- */
+const VOTE_KEY='proyectos_mis_votos', HINTS=['Podría mejorar','Regular','Bueno','Muy bueno','Excelente'];
+const avg=i=>i.votos?i.suma/i.votos:0;
+const score=i=>(i.suma+9)/(i.votos+3);   // promedio ponderado: evita que 1 solo voto domine el ranking
+const myVotes=()=>{try{return JSON.parse(localStorage.getItem(VOTE_KEY))||{}}catch(e){return {}}};
+function rateBtn(i){
+  const r=Math.round(avg(i));
+  return `<button class="rate" data-r="${i.idx}" aria-haspopup="dialog" aria-label="Calificar proyecto"><span class="stars">${'★'.repeat(r)}${'☆'.repeat(5-r)}</span><span>${i.votos?avg(i).toFixed(1)+' ('+i.votos+')':'Sin calificar'}</span></button>`;
+}
+let popItem=null;
+const hidePop=()=>{$('pop').hidden=true;popItem=null;};
+function showPop(btn){
+  const p=$('pop'); popItem=data[+btn.dataset.r]; const my=myVotes()[popItem.id]||0;
+  const base=my?'Tu calificación: '+my:'Elige de 1 a 5 estrellas';
+  p.innerHTML=`<div class="pop-t">Califica este proyecto</div><div class="pop-stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} ${n===1?'estrella':'estrellas'}">★</button>`).join('')}</div><div class="pop-h" id="popH">${base}</div>`;
+  const bs=[...p.querySelectorAll('[data-s]')];
+  const paint=(n,t)=>{bs.forEach(b=>b.classList.toggle('on',+b.dataset.s<=n));$('popH').textContent=t;};
+  paint(my,base);
+  bs.forEach(b=>{const n=+b.dataset.s; b.onmouseenter=b.onfocus=()=>paint(n,HINTS[n-1]); });
+  p.onmouseleave=()=>paint(my,base);
+  p.hidden=false;
+  const r=btn.getBoundingClientRect();
+  p.style.left=Math.max(8,Math.min(r.left,innerWidth-p.offsetWidth-8))+'px';
+  p.style.top=(r.bottom+p.offsetHeight+12>innerHeight ? Math.max(8,r.top-p.offsetHeight-6) : r.bottom+6)+'px';
+}
+async function castVote(n){
+  const i=popItem; if(!i) return;
+  const mv=myVotes(), prev=mv[i.id]||0;
+  if(prev){ i.suma+=n-prev; } else { i.suma+=n; i.votos+=1; }
+  mv[i.id]=n; try{localStorage.setItem(VOTE_KEY,JSON.stringify(mv));}catch(e){}
+  $('pop').innerHTML=`<div class="pop-t">¡Gracias por calificar!</div><div class="pop-stars">${'★'.repeat(n)}</div>`;
+  setTimeout(hidePop,1100);
+  const open=el.modal.classList.contains('open');
+  render(); renderSide(); if(open) openModal(i);
+  if(RATING_API_URL){
+    try{ await fetch(RATING_API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({id:i.id,stars:n,prev})}); }
+    catch(err){ console.error('No se pudo guardar la calificación',err); }
+  }
+}
+
 function mini(i,n){
   const hue = 85 + ([...(i.asignatura||'x')].reduce((a,c)=>a+c.charCodeAt(0),0) % 80);
   const L=(i.proyecto||'P')[0].toUpperCase(); const src=imgOf(i);
   const im = src ? `<img src="${esc(safeUrl(src))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML=phHtml(${hue},'${esc(L)}')">` : phHtml(hue,L);
   const autor=`${i.nombres} ${i.apellidos}`.trim();
-  return `<button class="mini" data-i="${i.idx}"><span class="rank">${n}</span><span class="mthumb">${im}</span><span class="mtxt"><b>${esc(i.proyecto||'Sin nombre')}</b><small>${esc([autor,i.periodo].filter(Boolean).join(' · '))}</small></span></button>`;
+  return `<button class="mini" data-i="${i.idx}"><span class="rank">${n}</span><span class="mthumb">${im}</span><span class="mtxt"><b>${esc(i.proyecto||'Sin nombre')}</b><small>${esc([i.votos?'★ '+avg(i).toFixed(1):'',autor,i.periodo].filter(Boolean).join(' · '))}</small></span></button>`;
 }
 function renderSide(){
-  const best=data.filter(isFeatured).slice(0,SIDE_COUNT);
+  const best=data.filter(i=>i.votos>0).sort((a,b)=>score(b)-score(a)).slice(0,SIDE_COUNT);
+  data.filter(isFeatured).forEach(i=>{ if(best.length<SIDE_COUNT && !best.includes(i)) best.push(i); });
   const last=[...data].reverse().slice(0,SIDE_COUNT);
   const blk=(cls,t,sub,items)=>`<div class="blk ${cls}"><div class="blk-h"><h2>${t}</h2><small>${sub}</small></div>${items.map((x,k)=>mini(x,k+1)).join('')}</div>`;
-  el.side.innerHTML=(best.length?blk('best','★ Top 5 mejores trabajos','Selección destacada',best):'')+blk('new','Últimos 5 subidos','Lo más reciente del repositorio',last);
+  el.side.innerHTML=(best.length?blk('best','★ Top 5 mejores trabajos','Mejor calificados y destacados',best):'')+blk('new','Últimos 5 subidos','Lo más reciente del repositorio',last);
 }
 
 function render(){
@@ -283,6 +343,7 @@ function render(){
     return hay && (!el.per.value||i.periodo===el.per.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
   });
   if(sortMode==='old') filtered.sort((a,b)=>a.idx-b.idx);
+  else if(sortMode==='top') filtered.sort((a,b)=>score(b)-score(a)||b.idx-a.idx);
   else if(sortMode==='az') filtered.sort((a,b)=>a.proyecto.localeCompare(b.proyecto,'es'));
   else filtered.sort((a,b)=>b.idx-a.idx);
 
@@ -292,7 +353,7 @@ function render(){
   const title = hasFilter ? `${n} ${n===1?'resultado':'resultados'}` : `Todos los proyectos (${n})`;
   const opt=(v,t,cur)=>`<option value="${v}"${v==cur?' selected':''}>${t}</option>`;
   const tools = `<div class="tools">
-    <select id="sortSel" aria-label="Ordenar">${opt('recent','Más recientes',sortMode)}${opt('old','Más antiguos',sortMode)}${opt('az','Nombre (A–Z)',sortMode)}</select>
+    <select id="sortSel" aria-label="Ordenar">${opt('recent','Más recientes',sortMode)}${opt('old','Más antiguos',sortMode)}${opt('top','Mejor calificados',sortMode)}${opt('az','Nombre (A–Z)',sortMode)}</select>
     <select id="perSel" aria-label="Resultados por página">${opt(10,'10 por página',perPage)}${opt(20,'20 por página',perPage)}</select>
     <div class="seg" role="group" aria-label="Tamaño de tarjetas">${[['s','P','Pequeño'],['m','M','Mediano'],['l','G','Grande']].map(([k,t,l])=>`<button data-size="${k}" title="${l}" aria-label="${l}" class="${size===k?'on':''}">${t}</button>`).join('')}</div></div>`;
   const head = `<div class="sec-head"><div><h2>${title}</h2><div class="sub">${n?`Mostrando ${start+1}–${start+slice.length}`:''}</div></div>${n?tools:''}</div>`;
@@ -331,7 +392,7 @@ function openModal(i){
   const autor=`${i.nombres} ${i.apellidos}`.trim();
   const tags=i.temas.split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('');
   el.dialog.innerHTML = `<button class="close" aria-label="Cerrar">×</button>${thumb(i,true)}
-    <div class="body"><h3>${esc(i.proyecto||'Sin nombre')}</h3>${autor?`<div class="author">${esc(autor)}</div>`:''}
+    <div class="body">${rateBtn(i)}<h3>${esc(i.proyecto||'Sin nombre')}</h3>${autor?`<div class="author">${esc(autor)}</div>`:''}
     <div class="info"><div><span>Periodo</span>${esc(i.periodo||'N/A')}</div><div><span>Asignatura</span>${esc(i.asignatura||'N/A')}</div><div><span>Regional</span>${esc(i.regional||'N/A')}</div></div>
     ${tags?`<div><div class="sub" style="color:var(--muted);font-size:.8rem;font-weight:600;margin-bottom:.4rem">Temas</div><div class="tags">${tags}</div></div>`:''}
     <a class="btn" href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer">Ver recurso</a></div>`;
@@ -340,6 +401,9 @@ function openModal(i){
 const closeModal=()=>el.modal.classList.remove('open');
 
 document.addEventListener('click',e=>{
+  const star=e.target.closest('#pop [data-s]'); if(star){ castVote(+star.dataset.s); return; }
+  const rb=e.target.closest('.rate'); if(rb){ e.stopPropagation(); showPop(rb); return; }
+  if(!e.target.closest('#pop')) hidePop();
   const pgb=e.target.closest('.pg[data-p]');
   if(pgb){ page=+pgb.dataset.p; render(); $('results').scrollIntoView({behavior:'smooth',block:'start'}); return; }
   const sz=e.target.closest('[data-size]'); if(sz){ size=sz.dataset.size; render(); return; }
@@ -352,10 +416,11 @@ document.addEventListener('click',e=>{
   const c=e.target.closest('.card'); if(c) openModal(data[+c.dataset.i]);
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') closeModal();
+  if(e.key==='Escape'){ hidePop(); closeModal(); }
   if(e.key==='Enter'&&e.target.classList.contains('card')) openModal(data[+e.target.dataset.i]);
 });
 
+window.addEventListener('scroll',hidePop,{passive:true});
 fetchSheetData();
 </script>
 </body>
