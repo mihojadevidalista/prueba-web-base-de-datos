@@ -74,29 +74,38 @@ function csv(t) {
   w.push(f); r.push(w); return r;
 }
 
+const err = m => Object.assign(new Error(m), { u: 1 });
+async function traer(u, que) { // descarga con límite de 20 s para no quedarse cargando para siempre
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 20000);
+  try { const x = await fetch(u, { signal: c.signal }); if (!x.ok) throw 0; return await x.text(); }
+  catch (e) { throw err('No se pudo leer ' + que + '. Revisa el enlace y tu conexión.'); }
+  finally { clearTimeout(t); }
+}
 async function iniciar() {
   try {
     const p = new URLSearchParams(location.search).get('proyecto');
     if (!p) return msg('Falta indicar el proyecto. Usa una dirección como galeria.html?proyecto=12');
     if (!httpOk(SHEET_URL) || !httpOk(GALERIA_API_URL)) return msg('La galería aún no está configurada.');
-    const filas = csv(await (await fetch(SHEET_URL)).text());
+    const filas = csv(await traer(SHEET_URL, 'el Sheet publicado'));
     const f = filas.find(x => (x[0] || '').trim() === p.trim()); // columna A = id
     if (!f) return msg('No encontramos el proyecto ' + p + '.');
     const id = idCarpeta(f[17] || ''); // columna R = galeria
     if (!id) return msg('Este proyecto todavía no tiene galería.');
     info = { titulo: f[1] || 'Proyecto', est: [f[2], f[3], f[4]].filter(x => x && x.trim()).join(', ') };
-    const r = await (await fetch(GALERIA_API_URL + '?folder=' + id)).json();
+    let r;
+    try { r = JSON.parse(await traer(GALERIA_API_URL + '?folder=' + id, 'el script de la galería')); }
+    catch (e) { return msg(e.u ? e.message : 'El script de la galería no devolvió datos válidos. Impleméntalo como aplicación web con acceso "Cualquier persona" y autoriza los permisos.'); }
     if (!r.ok) return msg('No pudimos leer la carpeta: ' + r.error);
     obras = (r.archivos || []).filter(a => /^[\w-]{10,}$/.test(a.id)).slice(0, MAX_ARCHIVOS);
     if (!obras.length) return msg('La carpeta está vacía o no tiene JPG, PNG o PDF válidos.');
     await cargarImagenes();
     arrancar();
-  } catch (e) { console.error(e); msg('Ocurrió un problema al cargar la galería. Intenta de nuevo más tarde.'); }
+  } catch (e) { console.error(e); msg(e.u ? e.message : 'Ocurrió un problema al cargar la galería. Intenta de nuevo más tarde.'); }
 }
 
 function cargar(a, cors) {
   return new Promise(ok => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous';
-    i.onload = () => ok(i); i.onerror = () => ok(null); i.src = urlImg(a); });
+    setTimeout(() => ok(null), 20000); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = urlImg(a); });
 }
 // Estrategia CORS: primero con crossOrigin (sirve para WebGL); si TODAS fallan, reintenta sin él y usa modo CSS 3D.
 async function cargarImagenes() {
