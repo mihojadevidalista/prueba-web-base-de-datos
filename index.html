@@ -27,8 +27,10 @@ body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;backgrou
 
 /* Enlaces opcionales (video / experiencia): pequeños, solo si existen */
 .xlinks{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
-.xlink{display:inline-block;font-size:.76rem;font-weight:600;color:var(--green-d);background:#fff;border:1px solid var(--green-m);border-radius:999px;padding:.15rem .6rem;text-decoration:none}
-.xlink:hover{background:var(--green-l)}
+.xlink{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:700;color:var(--green-d);background:#fff;border:2px solid var(--green);border-radius:999px;padding:.25rem .8rem;text-decoration:none;cursor:pointer;box-shadow:0 2px 0 var(--green-m);transition:background .15s,color .15s,transform .1s,box-shadow .1s}
+.xlink::after{content:'👆';font-size:.95em;line-height:1}
+.xlink:hover{background:var(--green);color:#fff;transform:translateY(-1px)}
+.xlink:active{transform:translateY(1px);box-shadow:none}
 
 /* Panel de búsqueda */
 .panel{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px -12px rgba(52,112,26,.25);padding:1.25rem;margin-top:-3.5rem;position:relative}
@@ -52,7 +54,7 @@ section{margin-top:0}
 .sort{width:auto;min-width:190px}
 
 /* Tarjetas */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1.4rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1.2rem}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}
 .card:hover{box-shadow:0 14px 28px -14px rgba(52,112,26,.35);border-color:var(--green-m);transform:translateY(-2px)}
 .thumb{position:relative;aspect-ratio:16/9;background:var(--green-l);overflow:hidden}
@@ -102,7 +104,7 @@ section{margin-top:0}
 .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
 .seg button{border:0;background:none;padding:.5rem .8rem;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
 .seg button.on{background:var(--green);color:#fff}
-.grid.s{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.9rem}
+.grid.s{grid-template-columns:minmax(0,1fr);gap:.8rem}
 .grid.s .tags,.grid.s .meta{display:none}
 .grid.s .body{padding:.75rem .85rem .85rem;gap:.4rem}
 .grid.s h3{font-size:.92rem}
@@ -111,7 +113,7 @@ section{margin-top:0}
 .grid.s .thumb{aspect-ratio:16/10}
 .grid.s .ph{font-size:1.8rem}
 .grid.s .pill{font-size:.68rem;padding:.1rem .45rem}
-.grid.l{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.grid.l{grid-template-columns:minmax(0,1fr)}
 @media (max-width:900px){.layout{grid-template-columns:1fr}.side{position:static;max-height:none}}
 
 /* Calificación */
@@ -149,6 +151,65 @@ section{margin-top:0}
 footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:520px){.hero{padding-top:2rem}}
+
+/* ===== Ajuste responsive: escritorio a dos columnas y móvil cómodo ===== */
+html{-webkit-text-size-adjust:100%}
+body{overflow-x:hidden}
+.card,.body,.mtxt,.blk,.layout>*{min-width:0}
+.body h3,.author,.meta,.mtxt b{overflow-wrap:anywhere}
+
+/* Escritorio y tablet ancha: la tarjeta se ve en fila (imagen a la izquierda, datos a la derecha), un proyecto por fila */
+@media (min-width:641px){
+  .card{flex-direction:row}
+  .card .thumb{flex:none;width:260px;min-height:170px;aspect-ratio:auto}
+  .grid.s .card .thumb{width:170px;min-height:110px;aspect-ratio:auto}
+  .grid.l .card .thumb{width:380px;min-height:230px;aspect-ratio:auto}
+  .card .btn{align-self:flex-start;padding:.6rem 1.4rem}
+  .filters select{font-size:.92rem;padding:.8rem .4rem .8rem .7rem}
+}
+
+/* Tablet y móvil: los destacados pasan arriba como carrusel que se desliza con el dedo */
+@media (max-width:900px){
+  .layout{gap:1.25rem;margin-top:1.25rem}
+  .side{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:.8rem;padding:2px 2px 12px}
+  .blk{flex:0 0 min(88%,380px);scroll-snap-align:start}
+}
+
+/* Móvil */
+@media (max-width:640px){
+  .container{padding:0 .85rem}
+  .panel{padding:.9rem;border-radius:14px}
+  input,select{font-size:16px;padding:.7rem .85rem}  /* 16px evita el zoom automático de iPhone */
+  .search input{font-size:16px;padding-left:2.7rem}
+  .filters{grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.75rem}
+  .filters label{font-size:.75rem}
+  .filters select{min-height:44px;text-overflow:ellipsis}
+  .chip{min-height:36px;padding:.35rem .7rem}
+  .sec-head{align-items:stretch;gap:.6rem}
+  .sec-head h2{font-size:1.2rem}
+  .tools{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .tools select{width:100%;min-height:44px;font-size:16px}
+  .sort{min-width:0}
+  .seg{grid-column:1/-1;display:flex}
+  .seg button{flex:1;min-height:42px}
+  .body{padding:1rem}
+  .btn{padding:.85rem 1rem}
+  .tag{padding:.35rem .7rem;font-size:.82rem}
+  .rate{min-height:36px;padding:.3rem .8rem}
+  .xlink{font-size:.85rem;padding:.4rem .9rem;min-height:38px}
+  .pg{min-width:2.6rem;height:2.6rem;padding:0 .6rem}
+  .pager{gap:.3rem}
+  .mtxt small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .modal{padding:0;align-items:flex-end}
+  .dialog{max-height:94vh;border-radius:18px 18px 0 0}
+  .dialog .thumb{aspect-ratio:16/9}
+  .dialog .body{padding:1.1rem 1.1rem 1.5rem}
+  .dialog h3{font-size:1.25rem}
+  .info{grid-template-columns:1fr 1fr}
+  .close{width:2.75rem;height:2.75rem}
+  #pop{width:min(250px,calc(100vw - 16px))}
+}
+@media (max-width:480px){.filters{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -161,13 +222,14 @@ footer{padding:2rem 0 3rem;text-align:center;color:var(--muted);font-size:.85rem
   <div class="panel">
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="search" id="searchInput" placeholder="Busca por proyecto, nombre, apellido o tema" aria-label="Buscar">
+      <input type="search" id="searchInput" placeholder="Busca proyecto, nombre o tema" aria-label="Buscar">
     </div>
     <div class="filters">
       <div><label for="filterPeriodo">Periodo</label><select id="filterPeriodo"><option value="">Todos los periodos</option></select></div>
       <div><label for="filterSemestre">Semestre</label><select id="filterSemestre"><option value="">Todos los semestres</option></select></div>
       <div><label for="filterAsignatura">Asignatura</label><select id="filterAsignatura"><option value="">Todas las asignaturas</option></select></div>
       <div><label for="filterRegional">Regional</label><select id="filterRegional"><option value="">Todas las regionales</option></select></div>
+      <div><label for="filterExtra">Contenido</label><select id="filterExtra"><option value="">Todos los contenidos</option><option value="video">Con video</option><option value="galeria">Con galería virtual</option></select></div>
     </div>
     <div class="active-row" id="activeRow"></div>
   </div>
@@ -209,7 +271,7 @@ let data = [];
 let filtered = [];
 let page = 1;
 const $ = id => document.getElementById(id);
-const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura'), reg:$('filterRegional'), sem:$('filterSemestre'),
+const el = { q:$('searchInput'), per:$('filterPeriodo'), asi:$('filterAsignatura'), reg:$('filterRegional'), sem:$('filterSemestre'), ext:$('filterExtra'),
              view:$('view'), side:$('side'), active:$('activeRow'), modal:$('modal'), dialog:$('dialog') };
 let sortMode = 'recent', perPage = 10, size = 'm';
 
@@ -225,7 +287,7 @@ async function fetchSheetData(){
     data = parseCSV(await r.text()).map((d,i)=>({...d,idx:i}));
     populateFilterOptions(); renderSide();
     ['input','change'].forEach(ev=>{
-      [el.q,el.per,el.sem,el.asi,el.reg].forEach(n=>n.addEventListener(ev,()=>{page=1;render();}));
+      [el.q,el.per,el.sem,el.asi,el.reg,el.ext].forEach(n=>n.addEventListener(ev,()=>{page=1;render();}));
     });
     render();
   }catch(e){
@@ -275,7 +337,7 @@ function phHtml(h,l){ return `<div class="ph" style="background:linear-gradient(
 
 // Galería virtual (columna R): solo se muestra si la celda trae un enlace de carpeta de Drive
 const tieneGaleria = i => /\/folders\/[\w-]{10,}|[?&]id=[\w-]{10,}/.test(i.galeria||'');
-const galeriaLink = i => tieneGaleria(i) ? `<a class="xlink" href="galeria.html?proyecto=${encodeURIComponent(i.id)}" target="_blank" rel="noopener">🖼 Galería</a>` : '';
+const galeriaLink = i => tieneGaleria(i) ? `<a class="xlink" href="galeria.html?proyecto=${encodeURIComponent(i.id)}" target="_blank" rel="noopener">🖼 Galería virtual</a>` : '';
 const xlinks = i => (i.video||i.experiencia||tieneGaleria(i)) ? `<div class="xlinks">${i.video?`<a class="xlink" href="${esc(safeUrl(i.video))}" target="_blank" rel="noopener noreferrer">▶ Video</a>`:''}${i.experiencia?`<a class="xlink" href="${esc(safeUrl(i.experiencia))}" target="_blank" rel="noopener noreferrer">✦ Experiencia</a>`:''}${galeriaLink(i)}</div>` : '';
 
 function card(i){
@@ -355,13 +417,13 @@ function renderSide(){
 
 function render(){
   const q = el.q.value.toLowerCase().trim();
-  const hasFilter = q || el.per.value || el.sem.value || el.asi.value || el.reg.value;
+  const hasFilter = q || el.per.value || el.sem.value || el.asi.value || el.reg.value || el.ext.value;
   renderActive(q);
 
   filtered = data.filter(i=>{
     const nq = norm(q);
     const hay = !q || [i.proyecto,i.nombres,i.apellidos,`${i.nombres} ${i.apellidos}`,i.temas,i.asignatura].some(v=>norm(v).includes(nq));
-    return hay && (!el.per.value||i.periodo===el.per.value) && (!el.sem.value||i.semestre===el.sem.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value);
+    return hay && (!el.per.value||i.periodo===el.per.value) && (!el.sem.value||i.semestre===el.sem.value) && (!el.asi.value||i.asignatura===el.asi.value) && (!el.reg.value||i.regional===el.reg.value) && (!el.ext.value||(el.ext.value==='video'?!!i.video:tieneGaleria(i)));
   });
   if(sortMode==='old') filtered.sort((a,b)=>a.idx-b.idx);
   else if(sortMode==='top') filtered.sort((a,b)=>score(b)-score(a)||b.idx-a.idx);
@@ -394,11 +456,12 @@ function renderActive(q){
   if(el.sem.value) items.push(['sem','Semestre '+el.sem.value]);
   if(el.asi.value) items.push(['asi',el.asi.value]);
   if(el.reg.value) items.push(['reg',el.reg.value]);
+  if(el.ext.value) items.push(['ext',el.ext.value==='video'?'Con video':'Con galería virtual']);
   el.active.innerHTML = items.length
     ? items.map(([k,t])=>`<button class="chip" data-clear="${k}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join('')+'<button class="link-btn" data-clear="all">Limpiar todo</button>'
     : '';
 }
-function clearAll(){ el.q.value=''; el.per.value=''; el.sem.value=''; el.asi.value=''; el.reg.value=''; page=1; render(); }
+function clearAll(){ el.q.value=''; el.per.value=''; el.sem.value=''; el.asi.value=''; el.reg.value=''; el.ext.value=''; page=1; render(); }
 
 function pagerHtml(pages){
   if(pages<=1) return '';
@@ -433,7 +496,7 @@ document.addEventListener('click',e=>{
   const mn=e.target.closest('.mini'); if(mn){ openModal(data[+mn.dataset.i]); return; }
   const tag=e.target.closest('.tag'); const clr=e.target.closest('[data-clear]');
   if(tag){ e.stopPropagation(); closeModal(); el.q.value=tag.dataset.tag; page=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
-  if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,sem:el.sem,asi:el.asi,reg:el.reg})[k].value=''; page=1; render(); } return; }
+  if(clr){ const k=clr.dataset.clear; if(k==='all') clearAll(); else { ({q:el.q,per:el.per,sem:el.sem,asi:el.asi,reg:el.reg,ext:el.ext})[k].value=''; page=1; render(); } return; }
   if(e.target.closest('.close')||e.target===el.modal){ closeModal(); return; }
   if(e.target.closest('.btn,.xlink')) return;
   const c=e.target.closest('.card'); if(c) openModal(data[+c.dataset.i]);
