@@ -7,6 +7,11 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#1b1b1b;font-family:system-ui,sans-serif}
 [hidden]{display:none!important}
+/* Anti-selección: al arrastrar en modo libre no se selecciona texto/imágenes (sombreado azul) */
+html,body,#esc,#css3d,#mundo,.e,#tit,#hud{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#esc canvas,.p img{-webkit-user-drag:none;user-drag:none;pointer-events:auto}
+.p img{pointer-events:none}
+::selection{background:transparent}
 #esc,#css3d{position:fixed;inset:0;touch-action:none}
 #esc canvas{display:block;width:100%;height:100%}
 #css3d{display:none;overflow:hidden}
@@ -14,8 +19,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1b1b;font-family:sy
 .e{position:absolute;left:0;top:0;transform-origin:0 0;transform-style:preserve-3d}
 .p{border:8px solid #2a2a2a;box-sizing:content-box;background:#ddd;display:flex;align-items:center;justify-content:center;font:600 16px system-ui;color:#555;cursor:pointer}
 .p img{width:100%;height:100%;display:block}
-.t{background:#fff;border-left:6px solid var(--ac);padding:6px 10px;font:12px system-ui;color:#555;overflow:hidden}
-.t b{display:block;font-size:15px;color:#222}
+.t{background:#fff;border-left:6px solid var(--ac);padding:3px 8px;font:13px/15px system-ui;color:#555;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.t b,.t i{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
+.t b{font-size:15px;line-height:18px;color:#222}
+.t b.l{font-size:12.5px}
+.pm{overflow:hidden;background:#000;transform-style:flat}
 #tit{position:fixed;top:0;left:0;right:0;padding:10px 14px;background:#000b;color:#fff;font-size:15px;pointer-events:none}
 #hud{position:fixed;left:0;right:0;bottom:0;padding:12px;pointer-events:none;background:linear-gradient(transparent,#000c)}
 #ctl{pointer-events:auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;color:#fff;font-size:16px}
@@ -61,6 +69,13 @@ const msg = t => { $('msg').textContent = t; $('barra').style.display = 'none'; 
 const httpOk = u => /^https?:\/\//i.test(u);
 const idCarpeta = u => { const m = /\/folders\/([\w-]{10,})/.exec(u) || /[?&]id=([\w-]{10,})/.exec(u); return m ? m[1] : null; };
 const urlImg = a => 'https://drive.google.com/thumbnail?id=' + a.id + '&sz=w' + SZ;
+// Clasifica cada archivo: 'gif' (animado), 'video' (mp4), 'pdf' o '' (imagen normal)
+const clase = a => { const n = (a.name || '').toLowerCase(), m = (a.mimeType || '').toLowerCase(), t = (a.tipo || '').toLowerCase();
+  if (t == 'pdf' || /pdf/.test(m) || /\.pdf$/.test(n)) return 'pdf';
+  if (t == 'gif' || /gif/.test(m) || /\.gif$/.test(n)) return 'gif';
+  if (t == 'video' || /^video\//.test(m) || /\.(mp4|m4v|mov|webm)$/.test(n)) return 'video';
+  return ''; };
+const urlsGif = a => ['https://drive.google.com/uc?export=view&id=' + a.id, 'https://lh3.googleusercontent.com/d/' + a.id];
 const recorta = (t, n) => (t || '').length > n ? t.slice(0, n - 1) + '…' : (t || '');
 
 // Lector CSV (soporta comillas y comas dentro de celdas)
@@ -94,27 +109,33 @@ async function iniciar() {
     if (!f) return msg('No encontramos el proyecto ' + p + '.');
     const id = idCarpeta(f[17] || ''); // columna R = galeria
     if (!id) return msg('Este proyecto todavía no tiene galería.');
-    info = { titulo: f[1] || 'Proyecto', est: [f[2], f[3], f[4]].filter(x => x && x.trim()).join(', ') };
+    info = { titulo: f[1] || 'Proyecto', est: [f[2], f[3], f[4]].filter(x => x && x.trim()).join(', '), pers: [f[2], f[3], f[4]].filter(x => x && x.trim()).map(x => x.trim()) };
     let r;
     try { r = JSON.parse(await traer(GALERIA_API_URL + '?folder=' + id, 'el script de la galería')); }
     catch (e) { return msg(e.u ? e.message : 'El script de la galería no devolvió datos válidos. Impleméntalo como aplicación web con acceso "Cualquier persona" y autoriza los permisos.'); }
     if (!r.ok) return msg('No pudimos leer la carpeta: ' + r.error);
     obras = (r.archivos || []).filter(a => /^[\w-]{10,}$/.test(a.id)).slice(0, MAX_ARCHIVOS);
     if (!obras.length) return msg('La carpeta está vacía o no tiene JPG, PNG o PDF válidos.');
+    obras.forEach(a => a.k = clase(a));
     await cargarImagenes();
     arrancar();
   } catch (e) { console.error(e); msg(e.u ? e.message : 'Ocurrió un problema al cargar la galería. Intenta de nuevo más tarde.'); }
 }
 
-function cargar(a, cors) {
+function cargar(a, cors, url) {
   return new Promise(ok => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous';
-    setTimeout(() => ok(null), 20000); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = urlImg(a); });
+    setTimeout(() => ok(null), 20000); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = url || urlImg(a); });
 }
 // Estrategia CORS: primero con crossOrigin (sirve para WebGL); si TODAS fallan, reintenta sin él y usa modo CSS 3D.
 async function cargarImagenes() {
   $('barra').style.display = 'block'; let n = 0;
   const paso = () => { $('prog').style.width = (++n / obras.length * 100) + '%'; };
-  await Promise.all(obras.map(async a => { a.img = await cargar(a, true); paso(); }));
+  // GIF, PDF y MP4 solo se muestran bien en el modo HTML/CSS 3D (el GIF se anima y PDF/MP4 van en visor incrustado)
+  if (obras.some(a => a.k)) modo = 'css';
+  await Promise.all(obras.map(async a => {
+    if (a.k == 'gif') { for (const u of urlsGif(a)) { a.img = await cargar(a, false, u); if (a.img) break; } if (!a.img) a.img = await cargar(a, false); }
+    else a.img = await cargar(a, modo != 'css'); // PDF/MP4: la miniatura sirve de portada y para calcular la proporción
+    paso(); }));
   const fallo = obras.filter(a => !a.img);
   if (fallo.length) { // alguna falló por CORS: se reintenta sin CORS y se usa el modo CSS 3D para todas
     modo = 'css';
@@ -125,7 +146,8 @@ async function cargarImagenes() {
 function arrancar() {
   obras.forEach((a, i) => {
     a.i = i; a.lado = i % 2 ? 1 : -1; a.z = -3 - Math.floor(i / 2) * 5; // izquierda/derecha alternando
-    if (a.img) { const r = a.img.width / a.img.height; a.w = Math.min(3.2, 2.2 * r); a.h = a.w / r; } else { a.w = 2.2; a.h = 1.6; }
+    const r = a.img ? a.img.width / a.img.height : a.k == 'video' ? 16 / 9 : a.k == 'pdf' ? .77 : 0;
+    if (r) { a.w = Math.min(3.2, 2.2 * r); a.h = a.w / r; } else { a.w = 2.2; a.h = 1.6; }
   });
   obras.forEach(a => { a.y = Math.max(1.6, a.h / 2 + .85); }); // altura del centro: sube las obras altas para que la placa no se hunda en el piso
   zMin = -(Math.floor((obras.length - 1) / 2) * 5 + 6);
@@ -145,6 +167,20 @@ function tarjeta(l1, l2) {
   g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 128); g.fillStyle = COLORES.acento; g.fillRect(0, 0, 10, 128);
   g.fillStyle = '#222'; g.font = 'bold 30px system-ui,sans-serif'; g.fillText(recorta(l1, 32), 26, 52);
   g.fillStyle = '#555'; g.font = '22px system-ui,sans-serif'; g.fillText(recorta(l2, 44), 26, 92);
+  return new THREE.CanvasTexture(c);
+}
+// Placa con el nombre del proyecto y hasta 3 participantes (cada uno en su línea, con ajuste de tamaño para que quepa)
+function placa(tit, pers) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, 1024, 256); g.fillStyle = COLORES.acento; g.fillRect(0, 0, 14, 256);
+  const filas = [{ t: tit || '', b: 'bold ', f: 40, c: '#222', h: 56 }].concat((pers || []).slice(0, 3).map(p => ({ t: p, b: '', f: 32, c: '#555', h: 44 })));
+  const maxw = 1024 - 14 - 36; let y = (256 - filas.reduce((s, r) => s + r.h, 0)) / 2;
+  filas.forEach(r => {
+    let f = r.f, t = r.t; const fn = () => { g.font = r.b + f + 'px system-ui,sans-serif'; return g.measureText(t).width; };
+    while (fn() > maxw && f > 20) f -= 2;
+    while (fn() > maxw && t.length > 4) t = t.slice(0, -2) + '…';
+    g.fillStyle = r.c; g.fillText(t, 30, y + r.h * .75); y += r.h;
+  });
   return new THREE.CanvasTexture(c);
 }
 function webgl() {
@@ -170,7 +206,7 @@ function webgl() {
     if (a.img) { t = new THREE.Texture(a.img); t.needsUpdate = true; } else t = tarjeta('No se pudo cargar', '');
     const m = pl(a.w, a.h, new THREE.MeshBasicMaterial({ map: t }), px(.02), a.y, a.z, ry);
     m.userData.i = a.i; pics.push(m);
-    pl(2.4, .6, new THREE.MeshBasicMaterial({ map: tarjeta(info.titulo, info.est) }), px(.02), a.y - a.h / 2 - .45, a.z, ry);
+    pl(2.9, .725, new THREE.MeshBasicMaterial({ map: placa(info.titulo, info.pers) }), px(.02), a.y - a.h / 2 - .44, a.z, ry);
   });
   const rc = new THREE.Raycaster();
   return {
@@ -187,7 +223,7 @@ function css() {
   const e = $('css3d'); e.style.display = 'block';
   const m = document.createElement('div'); m.id = 'mundo'; e.appendChild(m);
   let P = 600;
-  const L = 2 - zMin, zc = (2 + zMin) / 2;
+  const L = 2 - zMin, zc = (2 + zMin) / 2, dd = {}, ifr = { i: -1, el: null };
   const caja = (w, h, x, y, z, ry, rx, cls, bg) => {
     const d = document.createElement('div'); d.className = 'e ' + cls;
     d.style.cssText = `width:${w * S}px;height:${h * S}px;${bg ? 'background:' + bg + ';' : ''}transform:translate3d(${x * S}px,${-y * S}px,${z * S}px) rotateY(${ry || 0}rad) rotateX(${rx || 0}rad) translate(-50%,-50%)`;
@@ -202,15 +238,28 @@ function css() {
   obras.forEach(a => {
     const ry = -a.lado * Math.PI / 2, x = a.lado * (W - .02);
     const d = caja(a.w, a.h, x, a.y, a.z, ry, 0, 'p');
-    if (a.img) { const im = document.createElement('img'); im.src = a.img.src; im.alt = ''; d.appendChild(im); } else d.textContent = 'No se pudo cargar';
+    if (a.img) { const im = document.createElement('img'); im.src = a.img.src; im.alt = ''; d.appendChild(im); } else d.textContent = a.k == 'video' ? '▶ Video' : a.k == 'pdf' ? 'PDF' : 'No se pudo cargar';
+    if (a.k == 'pdf' || a.k == 'video') dd[a.i] = d;
     d.onclick = ev => { ev.stopPropagation(); if (!moved) clic(a.i); };
-    const t = caja(2.4, .5, x, a.y - a.h / 2 - .4, a.z, ry, 0, 't');
-    const b = document.createElement('b'); b.textContent = info.titulo; t.appendChild(b);
-    t.appendChild(document.createTextNode(info.est));
+    const t = caja(2.9, .725, x, a.y - a.h / 2 - .44, a.z, ry, 0, 't');
+    const b = document.createElement('b'); b.textContent = info.titulo; if ((info.titulo || '').length > 30) b.className = 'l'; t.appendChild(b);
+    (info.pers || []).slice(0, 3).forEach(p => { const n = document.createElement('i'); n.textContent = p; t.appendChild(n); });
   });
+  // PDF y MP4: el visor de Drive se incrusta solo mientras se está acercado a esa obra (así no se cargan todos a la vez y el video se detiene al salir)
+  function visor() {
+    const w = zoom && dd[cur] ? cur : -1;
+    if (w == ifr.i) return;
+    if (ifr.el) { ifr.el.remove(); ifr.el = null; }
+    ifr.i = w; if (w < 0) return;
+    const a = obras[w], Q = 900 / (a.w * S), f = document.createElement('iframe');
+    f.src = 'https://drive.google.com/file/d/' + a.id + '/preview'; f.allow = 'autoplay; fullscreen'; f.allowFullscreen = true; f.title = a.name || 'Archivo';
+    f.style.cssText = `position:absolute;left:0;top:0;width:${a.w * S * Q}px;height:${a.h * S * Q}px;border:0;background:#fff;transform:scale(${1 / Q});transform-origin:0 0`;
+    const v = document.createElement('div'); v.className = 'pm'; v.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%';
+    v.appendChild(f); dd[w].appendChild(v); ifr.el = v;
+  }
   return {
     resize() { P = innerHeight * K; e.style.perspective = P + 'px'; },
-    draw(c) { m.style.transform = `translateZ(${P}px) rotateX(${po}rad) rotateY(${-(c.yaw + yo)}rad) translate3d(${-c.x * S}px,${c.y * S}px,${-c.z * S}px)`; },
+    draw(c) { visor(); m.style.transform = `translateZ(${P}px) rotateX(${po}rad) rotateY(${-(c.yaw + yo)}rad) translate3d(${-c.x * S}px,${c.y * S}px,${-c.z * S}px)`; },
     free() { m.remove(); }
   };
 }
@@ -221,7 +270,7 @@ function pose(i) {
   const a = obras[i], asp = innerWidth / innerHeight;
   const f = Math.max(.35, (innerHeight - rsvT - rsvB) / innerHeight); // fracción de alto libre de botones
   const ch = zoom ? a.h + .2 : a.h + .9;                 // alto a mostrar (zoom: solo el cuadro; normal: cuadro + placa)
-  const cw = zoom ? a.w + .2 : Math.max(a.w, 2.4) + .3;  // ancho a mostrar
+  const cw = zoom ? a.w + .2 : Math.max(a.w, 2.9) + .3;  // ancho a mostrar
   const yc = a.y - (zoom ? 0 : .33);                          // centro vertical del contenido
   const d = Math.min(7.6, Math.max(1.2, Math.max(ch * K / f, cw / asp * K) * 1.18));
   const y = yc - (rsvB - rsvT) / 2 * (d / K) / innerHeight; // centra el contenido entre las dos barras
@@ -259,7 +308,12 @@ addEventListener('keydown', e => {
   if (!obras.length) return;
   if (e.key == 'ArrowLeft') goTo(cur - 1); else if (e.key == 'ArrowRight') goTo(cur + 1);
   else if (e.key == ' ') { e.preventDefault(); $('bP').onclick(); }
+  else if (e.key == 'Escape' && zoom) clic(cur);
 });
+// Anti-selección: bloquea selección y arrastre nativo de imágenes sobre la escena
+['selectstart', 'dragstart'].forEach(n => addEventListener(n, e => { if (e.target.closest && e.target.closest('#esc,#css3d')) e.preventDefault(); }));
+$('esc').addEventListener('mousedown', e => e.preventDefault());
+$('css3d').addEventListener('mousedown', e => e.preventDefault());
 let drag = null;
 $('esc').addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; moved = false; });
 $('css3d').addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; moved = false; });
@@ -270,6 +324,7 @@ addEventListener('pointermove', e => {
   drag = { x: e.clientX, y: e.clientY };
 });
 addEventListener('pointerup', () => { drag = null; setTimeout(() => moved = false, 0); });
+$('css3d').addEventListener('click', () => { if (!moved && zoom) clic(cur); }); // en modo CSS: clic en el fondo sale del zoom
 $('esc').addEventListener('click', e => { if (moved || !R || !R.pick) return; const i = R.pick(e); if (i >= 0) clic(i); else if (zoom) clic(cur); });
 addEventListener('resize', () => { medir(); R && R.resize(); });
 addEventListener('pagehide', () => R && R.free && R.free()); // libera memoria
