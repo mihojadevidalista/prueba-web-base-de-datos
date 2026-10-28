@@ -23,7 +23,10 @@ html,body,#esc,#css3d,#mundo,.e,#tit,#hud{-webkit-user-select:none;user-select:n
 .t b,.t i{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
 .t b{font-size:15px;line-height:18px;color:#222}
 .t b.l{font-size:12.5px}
-.pm{overflow:hidden;background:#000;transform-style:flat}
+#vis{position:fixed;left:8px;right:8px;z-index:5;display:flex;flex-direction:column;align-items:center;background:#000d;border-radius:10px;padding:6px}
+#vis .vh{width:100%;display:flex;justify-content:flex-end;padding-bottom:6px}
+#vis button{min-height:36px;padding:6px 14px;font-size:15px}
+#vis iframe{flex:1;min-height:0;width:min(100%,1100px);border:0;background:#fff;border-radius:6px}
 #tit{position:fixed;top:0;left:0;right:0;padding:10px 14px;background:#000b;color:#fff;font-size:15px;pointer-events:none}
 #hud{position:fixed;left:0;right:0;bottom:0;padding:12px;pointer-events:none;background:linear-gradient(transparent,#000c)}
 #ctl{pointer-events:auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;color:#fff;font-size:16px}
@@ -245,17 +248,21 @@ function css() {
     const b = document.createElement('b'); b.textContent = info.titulo; if ((info.titulo || '').length > 30) b.className = 'l'; t.appendChild(b);
     (info.pers || []).slice(0, 3).forEach(p => { const n = document.createElement('i'); n.textContent = p; t.appendChild(n); });
   });
-  // PDF y MP4: el visor de Drive se incrusta solo mientras se está acercado a esa obra (así no se cargan todos a la vez y el video se detiene al salir)
+  // PDF y MP4: al acercarse a la obra se abre el visor de Drive como capa plana sobre la pantalla (no dentro de la escena 3D),
+  // así el video se reproduce y el PDF se desplaza/amplía con mouse o dedo. Se cierra con ✕, Esc o al cambiar de obra.
   function visor() {
     const w = zoom && dd[cur] ? cur : -1;
-    if (w == ifr.i) return;
-    if (ifr.el) { ifr.el.remove(); ifr.el = null; }
-    ifr.i = w; if (w < 0) return;
-    const a = obras[w], Q = 900 / (a.w * S), f = document.createElement('iframe');
-    f.src = 'https://drive.google.com/file/d/' + a.id + '/preview'; f.allow = 'autoplay; fullscreen'; f.allowFullscreen = true; f.title = a.name || 'Archivo';
-    f.style.cssText = `position:absolute;left:0;top:0;width:${a.w * S * Q}px;height:${a.h * S * Q}px;border:0;background:#fff;transform:scale(${1 / Q});transform-origin:0 0`;
-    const v = document.createElement('div'); v.className = 'pm'; v.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%';
-    v.appendChild(f); dd[w].appendChild(v); ifr.el = v;
+    if (w != ifr.i) {
+      if (ifr.el) { ifr.el.remove(); ifr.el = null; }
+      ifr.i = w;
+      if (w >= 0) {
+        const a = obras[w], v = document.createElement('div'), h = document.createElement('div'), x = document.createElement('button'), f = document.createElement('iframe');
+        v.id = 'vis'; h.className = 'vh'; x.textContent = '✕ Cerrar'; x.onclick = () => clic(cur); h.appendChild(x);
+        f.src = 'https://drive.google.com/file/d/' + a.id + '/preview'; f.allow = 'autoplay; fullscreen'; f.allowFullscreen = true; f.title = a.name || 'Archivo';
+        v.append(h, f); document.body.appendChild(v); ifr.el = v;
+      }
+    }
+    if (ifr.el) { const t = (rsvT + 8) + 'px', bt = (rsvB + 8) + 'px'; if (ifr.el.style.top != t) ifr.el.style.top = t; if (ifr.el.style.bottom != bt) ifr.el.style.bottom = bt; }
   }
   return {
     resize() { P = innerHeight * K; e.style.perspective = P + 'px'; },
