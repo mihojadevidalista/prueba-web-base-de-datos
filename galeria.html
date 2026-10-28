@@ -11,7 +11,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1b1b;font-family:sy
 #esc canvas{display:block;width:100%;height:100%}
 #css3d{display:none;overflow:hidden}
 #mundo{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
-.e{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.e{position:absolute;left:0;top:0;transform-origin:0 0;transform-style:preserve-3d}
 .p{border:8px solid #2a2a2a;box-sizing:content-box;background:#ddd;display:flex;align-items:center;justify-content:center;font:600 16px system-ui;color:#555;cursor:pointer}
 .p img{width:100%;height:100%;display:block}
 .t{background:#fff;border-left:6px solid var(--ac);padding:6px 10px;font:12px system-ui;color:#555;overflow:hidden}
@@ -115,9 +115,10 @@ async function cargarImagenes() {
   $('barra').style.display = 'block'; let n = 0;
   const paso = () => { $('prog').style.width = (++n / obras.length * 100) + '%'; };
   await Promise.all(obras.map(async a => { a.img = await cargar(a, true); paso(); }));
-  if (!obras.some(a => a.img)) {
-    n = 0; modo = 'css';
-    await Promise.all(obras.map(async a => { a.img = await cargar(a, false); paso(); }));
+  const fallo = obras.filter(a => !a.img);
+  if (fallo.length) { // alguna falló por CORS: se reintenta sin CORS y se usa el modo CSS 3D para todas
+    modo = 'css';
+    await Promise.all(fallo.map(async a => { a.img = await cargar(a, false); }));
   }
 }
 
@@ -126,6 +127,7 @@ function arrancar() {
     a.i = i; a.lado = i % 2 ? 1 : -1; a.z = -3 - Math.floor(i / 2) * 5; // izquierda/derecha alternando
     if (a.img) { const r = a.img.width / a.img.height; a.w = Math.min(3.2, 2.2 * r); a.h = a.w / r; } else { a.w = 2.2; a.h = 1.6; }
   });
+  obras.forEach(a => { a.y = Math.max(1.6, a.h / 2 + .85); }); // altura del centro: sube las obras altas para que la placa no se hunda en el piso
   zMin = -(Math.floor((obras.length - 1) / 2) * 5 + 6);
   R = null;
   if (modo == 'webgl' && window.THREE) { try { R = webgl(); } catch (e) { console.warn('WebGL no disponible', e); } }
@@ -163,12 +165,12 @@ function webgl() {
   pl(2 * W, H, mat(COLORES.pared), 0, H / 2, 2, Math.PI);
   obras.forEach(a => {
     const ry = -a.lado * Math.PI / 2, px = o => a.lado * (W - o);
-    pl(a.w + .16, a.h + .16, mat('#2a2a2a'), px(.01), 1.6, a.z, ry);
+    pl(a.w + .16, a.h + .16, mat('#2a2a2a'), px(.01), a.y, a.z, ry);
     let t;
     if (a.img) { t = new THREE.Texture(a.img); t.needsUpdate = true; } else t = tarjeta('No se pudo cargar', '');
-    const m = pl(a.w, a.h, new THREE.MeshBasicMaterial({ map: t }), px(.02), 1.6, a.z, ry);
+    const m = pl(a.w, a.h, new THREE.MeshBasicMaterial({ map: t }), px(.02), a.y, a.z, ry);
     m.userData.i = a.i; pics.push(m);
-    pl(2.4, .6, new THREE.MeshBasicMaterial({ map: tarjeta(info.titulo, info.est) }), px(.02), 1.6 - a.h / 2 - .45, a.z, ry);
+    pl(2.4, .6, new THREE.MeshBasicMaterial({ map: tarjeta(info.titulo, info.est) }), px(.02), a.y - a.h / 2 - .45, a.z, ry);
   });
   const rc = new THREE.Raycaster();
   return {
@@ -199,10 +201,10 @@ function css() {
   caja(2 * W, H, 0, H / 2, 2, Math.PI, 0, '', COLORES.pared);
   obras.forEach(a => {
     const ry = -a.lado * Math.PI / 2, x = a.lado * (W - .02);
-    const d = caja(a.w, a.h, x, 1.6, a.z, ry, 0, 'p');
+    const d = caja(a.w, a.h, x, a.y, a.z, ry, 0, 'p');
     if (a.img) { const im = document.createElement('img'); im.src = a.img.src; im.alt = ''; d.appendChild(im); } else d.textContent = 'No se pudo cargar';
     d.onclick = ev => { ev.stopPropagation(); if (!moved) clic(a.i); };
-    const t = caja(2.4, .5, x, 1.6 - a.h / 2 - .4, a.z, ry, 0, 't');
+    const t = caja(2.4, .5, x, a.y - a.h / 2 - .4, a.z, ry, 0, 't');
     const b = document.createElement('b'); b.textContent = info.titulo; t.appendChild(b);
     t.appendChild(document.createTextNode(info.est));
   });
@@ -220,13 +222,13 @@ function pose(i) {
   const f = Math.max(.35, (innerHeight - rsvT - rsvB) / innerHeight); // fracción de alto libre de botones
   const ch = zoom ? a.h + .2 : a.h + .9;                 // alto a mostrar (zoom: solo el cuadro; normal: cuadro + placa)
   const cw = zoom ? a.w + .2 : Math.max(a.w, 2.4) + .3;  // ancho a mostrar
-  const yc = zoom ? 1.6 : 1.27;                          // centro vertical del contenido
-  const d = Math.min(7.6, Math.max(1.2, Math.max(ch * K / f, cw / asp * K) * 1.1));
+  const yc = a.y - (zoom ? 0 : .33);                          // centro vertical del contenido
+  const d = Math.min(7.6, Math.max(1.2, Math.max(ch * K / f, cw / asp * K) * 1.18));
   const y = yc - (rsvB - rsvT) / 2 * (d / K) / innerHeight; // centra el contenido entre las dos barras
   return { x: a.lado * (W - d), y: y, z: a.z, yaw: -a.lado * Math.PI / 2 };
 }
 function ui() {
-  $('cnt').textContent = (cur + 1) + ' / ' + obras.length;
+  $('cnt').textContent = (cur + 1) + ' / ' + obras.length + ' · ' + (obras[cur].name || '');
   $('bP').textContent = play ? '⏸ Pausa' : '▶ Reanudar';
   $('pdf').hidden = obras[cur].tipo != 'pdf'; medir();
 }
